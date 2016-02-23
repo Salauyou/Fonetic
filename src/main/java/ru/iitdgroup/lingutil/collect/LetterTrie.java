@@ -6,11 +6,12 @@ public final class LetterTrie {
     int size = 0;
     
     
-    public void add(CharSequence s) {
+    public LetterTrie add(CharSequence s) {
         if (contains(s))
-            return;
+            return this;
         root.add(s, 0);
         size += 1;
+        return this;
     }
     
     

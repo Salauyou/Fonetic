@@ -4,9 +4,12 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
+import java.util.List;
+
 import org.apache.commons.lang3.StringUtils;
 import org.junit.Test;
 import ru.iitdgroup.lingutil.text.Word;
+import ru.iitdgroup.lingutil.text.Words;
 
 
 public class TestWord {
@@ -260,4 +263,24 @@ public class TestWord {
         assertTrue(StringUtils.startsWith(w, "TW"));
         assertEquals(1, StringUtils.getLevenshteinDistance(w, "TO"));
     }
+    
+    
+    @Test
+    public void testComparators() {
+        List<Word> ws = Words.splitIntoWords("ZERO ONE TWO THREE");
+        ws.sort(Word.BY_VALUE);
+        assertEquals("ONE",   ws.get(0).value());
+        assertEquals("THREE", ws.get(1).value());
+        assertEquals("TWO",   ws.get(2).value());
+        assertEquals("ZERO",  ws.get(3).value());
+        
+        ws.add(ws.get(0).join(ws.get(2)));    // ONETWO
+        ws.sort(Word.BY_SOURCE_POSITION);
+        assertEquals("ZERO",   ws.get(0).value());
+        assertEquals("ONE",    ws.get(1).value());
+        assertEquals("ONETWO", ws.get(2).value());
+        assertEquals("TWO",    ws.get(3).value());
+        assertEquals("THREE",  ws.get(4).value());
+    }
+    
 }

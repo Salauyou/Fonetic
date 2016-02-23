@@ -1,6 +1,7 @@
 package ru.iitdgroup.lingutil.text;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Objects;
 
 /**
@@ -378,6 +379,23 @@ public final class Word implements CharSequence {
     }
  
     
+    // ------------------ comparators -------------------- //
+        
+    /**
+     * Comparing words by their value lexicographically
+     */
+    public static final Comparator<Word> BY_VALUE 
+        = (w1, w2) -> w1.value.compareTo(w2.value);
+    
+        
+    /**
+     * Comparing words by their position in source:
+     * first by starting position, then by ending
+     */
+    public static final Comparator<Word> BY_SOURCE_POSITION
+        = (w1, w2) -> w1.start == w2.start ? w1.end - w2.end : w1.start - w2.start;
+    
+        
     
     // -------- interfaces to use in transformers -------- //
     

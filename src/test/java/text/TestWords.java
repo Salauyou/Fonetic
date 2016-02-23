@@ -1,11 +1,15 @@
 package text;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+
 import org.junit.Test;
+
 import ru.iitdgroup.lingutil.text.Word;
 import ru.iitdgroup.lingutil.text.Words;
 
@@ -85,6 +89,7 @@ public class TestWords {
         assertEquals("THREE", words.get(1).getMappedSubstring());
     }
     
+    
     @Test
     public void testJoin() {
         String s = "A B C";
@@ -92,6 +97,35 @@ public class TestWords {
         Word w2 = Word.ofSubstring(s, 2, 3);
         Word w3 = Word.ofSubstring(s, 4, 5);
         assertEquals("A B C", Words.join(" ", w1, w2, w3).value());
+    }
+    
+    
+    @Test
+    public void testSplitByRegex() {
+        String s = "  A\n\nB   C D \t\t ";
+        List<Word> ws = Words.split(s, Pattern.compile("\\s+"));
+        assertEquals(4, ws.size());
+        assertEquals("ABCD", Words.join("", ws).value());
+        
+        s = "ONE , TWO ,THREE";
+        ws = Words.split(s, Pattern.compile("\\s+|,"));
+        assertEquals(3, ws.size());
+        assertEquals("ONE", ws.get(0).value());
+        assertEquals("TWO", ws.get(1).value());
+        assertEquals("THREE", ws.get(2).value());
+        
+        s = "  ";
+        ws = Words.split(s, Pattern.compile("\\s+"));
+        assertTrue(ws.isEmpty());
+    }
+    
+    
+    @Test
+    public void testApplyToSource() {
+        String s = ",;ONE; TWO;,, THREE;; ";
+        List<Word> ws = Words.splitIntoWords(s);
+        ws = ws.stream().map(w -> w.as("-")).collect(Collectors.toList());
+        assertEquals(",;-; -;,, -;; ", Words.applyToSource(ws));
     }
     
     
