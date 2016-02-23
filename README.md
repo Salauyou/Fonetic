@@ -35,3 +35,7 @@ encoded differently than original
 - [`LcsSearch`](src/main/java/ru/iitdgroup/lingutil/search/LcsSearch.java) 
 — search for matches using *gapped longest common
 subsequence*
+
+------
+
+A few small demos to see how it works: [src/main/java/demos](src/main/java/demos) 
