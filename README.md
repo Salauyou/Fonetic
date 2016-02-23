@@ -2,8 +2,6 @@
 
 Text search utils, fuzzy search algorithms etc.
 
---
-
 Main packages and classes:
 
 #####`text`
@@ -36,6 +34,6 @@ encoded differently than original
 — search for matches using *gapped longest common
 subsequence*
 
---
+-
 
 A few small demos to see how it works: [src/main/java/demos](src/main/java/demos) 
