@@ -28,7 +28,7 @@ utility methods etc.
 — original algorithm to search
 for phonetically similar occurrences of `pattern` in `text`. The
 main goal is to allow not only phonetic variations, but also 
-**misspells**, that commonly used *Metaphone* or *Soundex* 
+**non-phonetic misspells**, that commonly used *Metaphone* or *Soundex* 
 don't handle—misspelled word there are very likely to be 
 encoded differently than original
 
