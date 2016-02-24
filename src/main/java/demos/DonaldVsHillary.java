@@ -17,24 +17,22 @@ import ru.iitdgroup.lingutil.collect.LetterTrie;
 import ru.iitdgroup.lingutil.text.Word;
 import ru.iitdgroup.lingutil.text.Words;
 
+
 public class DonaldVsHillary {
 
-    
     static final String SPAN_DEMOCRATIC = "<span style=\"background: #08f; color: #fff\">%s</span>";
     static final String SPAN_REPUBLICAN = "<span style=\"background: #f00; color: #fff\">%s</span>";
     
+    static final LetterTrie hillary = new LetterTrie().add("HILLARY").add("CLINTON");
+    static final LetterTrie donald  = new LetterTrie().add("DONALD").add("TRUMP");
     
     
     /**
      * Take html string and replace by asterisks all words 
-     * except main 2016 candidate names
+     * except names of 2016 candidates
      */
     static String hillarize(String html) {
-        
-        // words we look for
-        LetterTrie hillary = new LetterTrie().add("HILLARY").add("CLINTON");
-        LetterTrie donald  = new LetterTrie().add("DONALD").add("TRUMP");
-        
+
         // headline counters
         AtomicInteger h = new AtomicInteger(0);
         AtomicInteger d = new AtomicInteger(0);
@@ -48,8 +46,8 @@ public class DonaldVsHillary {
              .forEach(words::addAll);
         
         // modify words: 
-        // 1) candidates are surrounded by coloured <span>,
-        // 2) other words are replaced by asterisks
+        // 1) if candidate name, surround by coloured <span>
+        // 2) else, replace by asterisks
         words = words
                 .stream()
                 .map(w -> {
@@ -72,8 +70,6 @@ public class DonaldVsHillary {
         // put words into source at their initial positions
         return Words.applyToSource(words);
     }
-    
-    
     
 
     
