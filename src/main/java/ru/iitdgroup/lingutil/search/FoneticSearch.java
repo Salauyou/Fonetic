@@ -75,7 +75,7 @@ public class FoneticSearch {
               .put('5', of('S'))
               .put('6', of('B'))
               .put('8', of('B'))
-              .put('9', of('D'))
+              .put('9', of('G'))
               .makeImmutable();
     
     final static LetterTable<LetterSet> DIGRAPHS 
