@@ -53,10 +53,10 @@ public class DonaldVsHillary {
                 .map(w -> {
                     if (hillary.contains(w)) {
                         h.incrementAndGet();
-                        return w.as(SPAN_DEMOCRATIC.replace("%s", w));
+                        return w.as(SPAN_DEMOCRATIC.replace("%s", w.getMappedSubstring()));
                     } else if (donald.contains(w)) {
                         d.incrementAndGet();
-                        return w.as(SPAN_REPUBLICAN.replace("%s", w));
+                        return w.as(SPAN_REPUBLICAN.replace("%s", w.getMappedSubstring()));
                     } else {
                         return w.transform((char c) -> '*');
                     }
