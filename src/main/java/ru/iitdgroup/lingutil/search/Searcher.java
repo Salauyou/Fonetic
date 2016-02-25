@@ -22,7 +22,7 @@ public interface Searcher {
     
     
     /**
-     * Searches for occurrences of all patterns from dictinary in a text,
+     * Searches for occurrences in a text of patterns across entire dictionary,
      * sending to consumer matches having score at least `minScore`
      */
     public <T> int search(CharSequence text, TrieMap<? extends T> dictionary, double minScore, 
