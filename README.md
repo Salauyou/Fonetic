@@ -8,7 +8,7 @@ Main packages and classes:
 
 - [`Word`](src/main/java/ru/iitdgroup/lingutil/text/Word.java) 
 — representation of a piece of text as some string 
-value, which internally "holds" mapping to source where it was
+value, which internally holds mapping to source where it was
 initially extracted from. Across transformations, such mapping 
 remains unchanged or may change accordingly if word length changes, 
 so after all operations it is clear simple to align resulting 
@@ -23,9 +23,9 @@ utility methods etc.
 This may be useful when you work with documents containing 
 markup tags and other special entities—you first extract text 
 as a collection or `Word`s from the document, then process/modify 
-it and apply modifications to source, leaving markup 
-untouched (for example, you search and highlight dictionary 
-words in html document).
+them, and finally apply modifications to source, leaving markup 
+untouched. (For example, you need to search and highlight 
+dictionary entries in html document.)
 
 #####`search`
 
