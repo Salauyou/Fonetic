@@ -20,6 +20,13 @@ utility methods etc.
 — utility class to produce `Word`s and play with them 
 (extract from `String`, join, split etc)
 
+This may be useful when you work with documents containing 
+markup tags and other special entities—you first extract text 
+as a collection or `Word`s from the document, then process/modify 
+it and apply modifications to source, leaving markup 
+untouched (for example, you search and highlight dictionary 
+words in html document).
+
 #####`search`
 
 - [`FoneticSearch`](src/main/java/ru/iitdgroup/lingutil/search/FoneticSearch.java) 
