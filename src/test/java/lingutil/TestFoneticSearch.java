@@ -1,8 +1,11 @@
 package lingutil;
-
 import static org.junit.Assert.*;
+
 import java.util.List;
+
 import org.junit.Test;
+
+
 import ru.iitdgroup.lingutil.match.ScoredMatch;
 import ru.iitdgroup.lingutil.search.FoneticSearch;
 

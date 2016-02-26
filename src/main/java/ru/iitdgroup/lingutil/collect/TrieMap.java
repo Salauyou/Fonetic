@@ -9,9 +9,36 @@ import java.util.function.BiFunction;
 
 /**
  * Trie-based map
+ * 
+ * @author Salauyou
  */
 public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
 
+    /*
+     * This trie implementation utilizes the fact that in real-life dictionaries 
+     * a lot of trie nodes have only one child, so speed of access and
+     * traversal can be improved by using special implementation for such nodes.
+     *
+     * Below is performance comparison against popular implementations, 
+     * including Apache Commons `PatricialTrie`. Tests were performed on list of 
+     * random 5...10-char string keys, equal amount of existing and non-existing keys. 
+     * When testing on `HashMap`, all string keys were recreated to clear cached 
+     * hash values.
+     *                    
+     * TrieMap<V> vs | HashMap<String, V> | TreeMap<String, V> | PatricialTrie<V>     
+     * --------------+--------------------+--------------------+-----------------                              
+     *         get() | ~2 times slower    | ~2 times faster    | ~25% faster
+     * containsKey() |
+     *      remove() |
+     *         put() |
+     * --------------+--------------------+--------------------+-----------------
+     *    traversal: |
+     *        first  |
+     *   subsequent  |
+     */ 
+    
+    
+    
     // TODO in Node:
     //      1) value access: private setValue(), public V getValue()
     //      2) public iterator over first-level children only
@@ -29,7 +56,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     public TrieMap<V> put(CharSequence s, V v) {
         Objects.requireNonNull(v);
         if (!containsKey(s))
-            size ++;
+            size++;
         root.put(s, 0, v);
         return this;
     }
@@ -70,6 +97,11 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
+    public boolean isEmpty() {
+        return size == 0;
+    }
+    
+    
     public int nodeCount() {
         return root.nodeCount;
     }
@@ -99,6 +131,10 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
+    public TrieMap<V> remove(CharSequence s) {
+        // TODO: implement
+        throw new UnsupportedOperationException();
+    }
     
     
     // --------------------- iteration support ------------------------ //
@@ -138,8 +174,9 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     static private final class Node<V> implements Iterable<Node<V>> {
         
         int nodeCount;
-        LetterMap<Node<V>> next;
+        CharMap<Node<V>> next;
         V value = null;
+        
         
         // adds a char sequence into node, creating subnodes if needed,
         // returns how node count of this node is changed
@@ -150,23 +187,30 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
             }
             int  r = 0;
             char c = s.charAt(from);
-            if (next == null)
-                next = new LetterMap<Node<V>>();
-            Node<V> n = next.get(c);
-            if (n == null) {
-                n = new Node<>();
+            Node<V> n;
+            if (next == null) {
                 r = 1;
-                next.put(c, n);
+                n = new Node<>();
+                next = new CharMapImpl.SingleCharMap<>(c, n);
+            } else {
+                n = next.get(c);
+                if (n == null) {
+                    n = new Node<>();
+                    r = 1;
+                    next = next.put(c, n);
+                }
             }
             r += n.put(s, from + 1, v);
             nodeCount += r;
             return r;
         }
                 
+        
         boolean contains(CharSequence s, int from) {
             return get(s, from) != null;
         }  
-                
+            
+        
         V get(CharSequence s, int from) {
             if (from == s.length())
                 return value;

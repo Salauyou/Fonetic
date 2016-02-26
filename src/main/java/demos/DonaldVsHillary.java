@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import ru.iitdgroup.lingutil.collect.LetterTrie;
+import ru.iitdgroup.lingutil.collect.TrieSet;
 import ru.iitdgroup.lingutil.text.Word;
 import ru.iitdgroup.lingutil.text.Words;
 
@@ -23,8 +23,8 @@ public class DonaldVsHillary {
     static final String SPAN_DEMOCRATIC = "<span style=\"background: #08f; color: #fff\">%s</span>";
     static final String SPAN_REPUBLICAN = "<span style=\"background: #f00; color: #fff\">%s</span>";
     
-    static final LetterTrie hillary = new LetterTrie().add("HILLARY").add("CLINTON");
-    static final LetterTrie donald  = new LetterTrie().add("DONALD").add("TRUMP");
+    static final TrieSet hillary = new TrieSet().add("HILLARY").add("CLINTON");    
+    static final TrieSet donald  = new TrieSet().add("DONALD").add("TRUMP");
     
     
     /**

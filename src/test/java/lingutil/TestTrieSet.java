@@ -6,13 +6,14 @@ import static org.junit.Assert.assertTrue;
 
 import org.junit.Test;
 
-import ru.iitdgroup.lingutil.collect.LetterTrie;
 
-public class TestLetterTrie {
+import ru.iitdgroup.lingutil.collect.TrieSet;
+
+public class TestTrieSet {
 
     @Test
     public void testAddContains() {        
-        LetterTrie t = new LetterTrie();
+        TrieSet t = new TrieSet();
         
         t.add("ABC");
         t.add("AB");
