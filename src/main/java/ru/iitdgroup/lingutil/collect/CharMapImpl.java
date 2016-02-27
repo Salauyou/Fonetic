@@ -116,6 +116,7 @@ class CharMapImpl {
             int p = bitFor(c);
             Cme<V> e = table[p];
             if (size == 1) 
+                return e.c == c ? MUTABLE_EMPTY : this;
             Cme<V> pred = null;              
             while (e != null && e.c != c) {
                 pred = e;
