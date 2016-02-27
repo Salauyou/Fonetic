@@ -110,10 +110,26 @@ class CharMapImpl {
         
         
         @Override
+        @SuppressWarnings("unchecked")
         public CharMap<V> remove(char c) {
             checkMutability();
-            // TODO: implement
-            throw new UnsupportedOperationException();
+            int p = bitFor(c);
+            Cme<V> e = table[p];
+            if (size == 1) 
+            Cme<V> pred = null;              
+            while (e != null && e.c != c) {
+                pred = e;
+                e = e.next;
+            }
+            if (e == null)     // key not found
+                return this;
+            size--;
+            if (pred == null) 
+                table[p] = e.next;
+            else 
+                pred.next = e.next;               
+            e.next = null;
+            return this;    
         }
         
         
@@ -244,8 +260,6 @@ class CharMapImpl {
         public CharMap merge(char c, Object value, BiFunction resolver) {
             return put(c, value);
         }
-        
-        
     };
     
 
@@ -373,7 +387,6 @@ class CharMapImpl {
             };
         }
     }
-    
 
- 
+    
 }

@@ -5,8 +5,10 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
@@ -46,24 +48,55 @@ public class TestCharMap {
     
     
     
-//    @Test
+    @Test
     public void testRemove() {
         CharMap<String> m = CharMap.create();
-        m.put('A', "alpha").put('2', "two");
-        assertEquals(2, m.size());
+        m.put('A', "alpha").put('2', "two").put('a', "alpha-small").put('q', "query");
+        assertEquals(4, m.size());
         m.remove('A');
-        assertEquals(1, m.size());
+        assertEquals(3, m.size());
         assertFalse(m.containsKey('A'));
         
         m.remove('B');
-        assertEquals(1, m.size());
+        assertEquals(3, m.size());
         assertFalse(m.containsKey('A'));
         assertFalse(m.containsKey('B'));
         
+        m.remove('q');
+        assertEquals(2, m.size());
+        assertFalse(m.containsKey('q'));
+        assertFalse(m.containsKey('A'));
+        assertNull(m.get('q'));
+        assertNull(m.get('A'));
+        
+        assertTrue(m.containsKey('a'));
+        assertEquals("alpha-small", m.get('a'));
+        assertTrue(m.containsKey('2'));
+        assertEquals("two", m.get('2'));
+        
+        m.put('A', "alpha-new");
         m.remove('2');
-        assertEquals(0, m.size());
-        for (char c : "1234567890 +=-;'qwertyuiopasdfghjklzxcvbnmQWERTYUIOPASDFGHJKLZXCVBNM".toCharArray())
+        assertTrue(m.containsKey('A'));
+        assertEquals("alpha-new", m.get('A'));
+        assertFalse(m.containsKey('2'));
+        assertNull(m.get('2'));
+        assertEquals(2, m.size());
+        
+        // keys
+        assertEquals(Arrays.asList('A', 'a'), 
+                m.stream().map(CharEntry::getChar).collect(Collectors.toList()));
+        
+        // values
+        assertEquals(Arrays.asList("alpha-new", "alpha-small"), 
+                m.stream().map(CharEntry::getValue).collect(Collectors.toList()));
+        
+        for (char c : "134567890 +=-;'qwertyuiopsdfghjklzxcvbnmQWERTYUIOPSDFGHJKLZXCVBNM".toCharArray())
             assertFalse(m.containsKey(c));
+        
+        m.remove('A').remove('q').remove('a').remove('1'); 
+        assertEquals(0, m.size());
+        assertFalse(m.entries().hasNext());
+        
     }
     
     
