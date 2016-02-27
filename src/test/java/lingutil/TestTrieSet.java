@@ -4,6 +4,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Arrays;
+import java.util.stream.Collectors;
+
 import org.junit.Test;
 
 
@@ -43,6 +46,13 @@ public class TestTrieSet {
         assertTrue(t.contains("ACD"));
     }
     
+    
+    @Test
+    public void testIterator() {
+        TrieSet t = new TrieSet().add("ONE").add("TWO").add("THREE").add("FOUR");
+        assertEquals(Arrays.asList("FOUR", "ONE", "THREE", "TWO"), 
+                t.stream().map(CharSequence::toString).collect(Collectors.toList()));
+    }
     
     
 }

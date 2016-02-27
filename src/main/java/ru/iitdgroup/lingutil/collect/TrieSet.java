@@ -2,6 +2,9 @@ package ru.iitdgroup.lingutil.collect;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
+import java.util.Spliterators;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * @author Salauyou
@@ -51,6 +54,12 @@ public class TrieSet implements Iterable<CharSequence> {
             @Override public boolean      hasNext() { return i.hasNext(); }
             @Override public CharSequence next()    { return i.next().getKey(); }
         };
+    }
+    
+    
+    public Stream<CharSequence> stream() {
+        return StreamSupport.stream(
+                  Spliterators.spliterator(iterator(), m.size, 0), false);
     }
 
 }

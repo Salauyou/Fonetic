@@ -148,8 +148,8 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      */
     @Override
     public Iterator<Entry<CharSequence, V>> iterator() {
-        // TODO Auto-generated method stub
-        return null;
+        // TODO: implement
+        throw new UnsupportedOperationException();
     }
     
     
