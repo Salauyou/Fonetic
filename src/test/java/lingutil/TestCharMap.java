@@ -51,7 +51,7 @@ public class TestCharMap {
     @Test
     public void testRemove() {
         CharMap<String> m 
-        	= CharMap.<String>create()
+            = CharMap.<String>create()
                      .put('A', "alpha")
                      .put('2', "two")
                      .put('a', "alpha-small")

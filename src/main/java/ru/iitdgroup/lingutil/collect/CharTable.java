@@ -11,7 +11,7 @@ public class CharTable<V> {
     boolean immutable = false;
     
     @SuppressWarnings("unchecked")
-	CharMap<CharMap<V>> table = CharMapImpl.MUTABLE_EMPTY;
+    CharMap<CharMap<V>> table = CharMapImpl.MUTABLE_EMPTY;
     
     
     public CharTable<V> put(char f, char s, V value) {
@@ -24,7 +24,7 @@ public class CharTable<V> {
         }
         CharMap<V> nRow = row.put(s, value);
         if (row != nRow)
-        	table.put(f, nRow);
+            table.put(f, nRow);
         return this;
     }
     
