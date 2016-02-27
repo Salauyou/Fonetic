@@ -3,6 +3,10 @@ package ru.iitdgroup.lingutil.collect;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Spliterators;
+import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
 
@@ -20,25 +24,32 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
     
     
     /**
-     * Returns value mapped to a given char key; or null
-     * if there is no association, or key char is out of allowed
-     * range, or it is mapped to null
+     * Returns value mapped to a given char key or null
+     * if there is no association
      */
     public abstract V get(char c);
     
     
     /**
-     * Returns if there is non-null value mapped 
-     * to given key char
+     * Returns if there is a value mapped to given key char
      */
     public abstract boolean containsKey(char c);
     
     
     /**
      * Maps given value to given key char, replacing any
-     * former mapping
+     * former mapping. Null value is not allowed
      */
     public abstract CharMap<V> put(char c, V value);
+    
+    
+    /**
+     * Maps given value to given key char, resolving
+     * conflict if a value already exists. Null value
+     * is not allowed, as well as null resolver result
+     */
+    public abstract CharMap<V> merge(char c, V value, 
+            BiFunction<? super V, ? super V, ? extends V> resolver);
     
     
     /**
@@ -71,17 +82,34 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
  
     
     /**
-     * Iterator of immutable entries
+     * Iterator over immutable entries
      */
     @Override
     public abstract Iterator<CharEntry<V>> iterator();
     
     
     /**
-     * Iterator which allows to modify values (unless map is immutable)
+     * Iterator over entries that support `setValue()` unless map is immutable
      */
-    public abstract Iterator<Map.Entry<Character, V>> entries();
+    public abstract Iterator<Entry<Character, V>> entries();
     
+    
+    /**
+     * Stream of immutable entries
+     */
+    public Stream<CharEntry<V>> stream() {
+        return StreamSupport.stream(
+                  Spliterators.spliterator(iterator(), size(), 0), false);
+    }
+   
+    
+    /**
+     * Stream of entries that support `setValue()` unless map is immutable
+     */
+    public Stream<Entry<Character, V>> entryStream() {
+        return StreamSupport.stream(
+                  Spliterators.spliterator(entries(), size(), 0), false);
+    }
     
    
     // child classes should call it before modifications
@@ -94,6 +122,9 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
  
     // ----------- immutable CharEntry ----------- //
     
+    /**
+     * Immutable entry {char, V}
+     */
     public static interface CharEntry<V> {
         char getChar();
         V    getValue();
@@ -116,10 +147,10 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
     // -------------- wrapper class ------------- //
     
     /** 
-     * Wrapper which is returned by `CharMap.create()`,
-     * which internally holds the most appropriate implementation.
-     * Outer code always gets a wrapper, package classes
-     * may directly instantiate needed implementation
+     * Wrapper returned by `CharMap.create()`, which internally 
+     * holds the most appropriate `CharMap` implementation and switch
+     * to another if needed. Outer code always gets a wrapper, package 
+     * classes may directly instantiate concrete implementations
      */
     final static class CharMapWrapper<V> extends CharMap<V> {
 
@@ -145,6 +176,13 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
         public CharMap<V> put(char c, V value) {    
             cm = cm.put(c, value);
             return this;
+        }
+        
+        @Override
+        public CharMap<V> merge(char c, V v, 
+                BiFunction<? super V, ? super V, ? extends V> resolver) {
+            cm = cm.merge(c, v, resolver);
+            return cm;
         }
 
         @Override

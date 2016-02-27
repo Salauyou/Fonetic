@@ -79,7 +79,7 @@ public class TestTrieMap {
         
         // let's summarize amounts using lambda
         for (Pair<String, String> a : amounts)            
-            sums.put(a.getKey(), new BigDecimal(a.getValue()), BigDecimal::add);
+            sums.merge(a.getKey(), new BigDecimal(a.getValue()), BigDecimal::add);
 
         assertEquals(3, sums.size());
         assertEquals(new BigDecimal("17.00"), sums.get("Bill"));

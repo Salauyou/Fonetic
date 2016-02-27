@@ -8,6 +8,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiFunction;
 
 
 
@@ -35,11 +36,13 @@ class CharMapImpl {
         MultiCharMap() { }
         
         
+        @Override
         public int size() {
             return size;
         }
 
-
+        
+        @Override
         public V get(char c) {
             Cme<V> e = table[bitFor(c)];
             while (e != null && e.c != c)
@@ -48,6 +51,7 @@ class CharMapImpl {
         }
 
         
+        @Override
         public boolean containsKey(char c) {
             Cme<V> e = table[bitFor(c)];
             while (e != null && e.c != c)
@@ -56,6 +60,7 @@ class CharMapImpl {
         }
 
         
+        @Override
         public CharMap<V> put(char c, V value) {
             checkMutability();
             int p = bitFor(c);
@@ -78,6 +83,31 @@ class CharMapImpl {
             return this;
         }
 
+        
+        @Override
+        public CharMap<V> merge(char c, V value, 
+                   BiFunction<? super V, ? super V, ? extends V> resolver) {
+            checkMutability();
+            int p = bitFor(c);
+            Cme<V> e = table[p];
+            if (e == null) {
+                table[p] = new Cme<>(this, c, value);
+                cachedEntries = null;
+                size++;
+                return this;
+            }
+            while (e.c != c && e.next != null) 
+                e = e.next;
+            if (e.c == c)
+                e.v = Objects.requireNonNull(resolver.apply(e.v, value));
+            else {
+                e.next = new Cme<>(this, c, value);
+                cachedEntries = null;
+                size++;
+            }
+            return this;
+        }
+        
         
         @Override
         public CharMap<V> remove(char c) {
@@ -171,6 +201,7 @@ class CharMapImpl {
 
             @Override public V setValue(V value) {
                 m.checkMutability();
+                Objects.requireNonNull(value);
                 V old = v;
                 v = value;
                 return old;
@@ -185,7 +216,7 @@ class CharMapImpl {
             public int compareTo(Cme<V> o) { 
                 return this.c - o.c; 
             }
-        }        
+        }     
     }
     
     
@@ -209,6 +240,11 @@ class CharMapImpl {
             return new SingleCharMap<>(c, value); 
         }
         
+        @Override
+        public CharMap merge(char c, Object value, BiFunction resolver) {
+            return put(c, value);
+        }
+        
         
     };
     
@@ -228,11 +264,15 @@ class CharMapImpl {
             return this;
         }
         
+        @Override
+        public CharMap merge(char c, Object value, BiFunction resolver) {
+            return this.put(c, value);        // this will always throw
+        }
+        
         @Override public CharMap remove(char c) { 
             checkMutability();                // this will always throw
             return this; 
         }
-        
     }.makeImmutable();
     
 
@@ -244,29 +284,39 @@ class CharMapImpl {
         final char c;
         V v;  
         
+        
         // instaitiation within package only
         SingleCharMap(char c, V v) {
             this.c = c;
             this.v = v;
         }        
         
+        
         @Override public V       get(char c)         { return this.c == c ? v : null; }
         @Override public boolean containsKey(char c) { return this.c == c; }
         @Override public int     size()              { return 1; }
-                
+         
+        
         @Override
         public CharMap<V> put(char c, V value) { 
+            return merge(c, value, (v1, v2) -> v2);
+        }       
+                
+        
+        @Override
+        public CharMap<V> merge(char c, V value,
+                BiFunction<? super V, ? super V, ? extends V> resolver) {
             Objects.requireNonNull(value);
             checkMutability();
             if (this.c == c) {
-                this.v = value;
+                this.v = Objects.requireNonNull(resolver.apply(this.v, value));
                 return this;
-            } else {
+            } else
                 return new MultiCharMap<V>()
                             .put(this.c, this.v)
                             .put(c, value);
             }
-        }       
+        
         
         @Override
         @SuppressWarnings("unchecked")
@@ -274,6 +324,7 @@ class CharMapImpl {
             checkMutability();
             return c == this.c ? MUTABLE_EMPTY : this;
         }
+        
         
         @Override
         public Iterator<CharEntry<V>> iterator() {
@@ -292,6 +343,7 @@ class CharMapImpl {
             };
         }        
         
+        
         @Override
         public Iterator<Entry<Character, V>> entries() {
             return new Iterator<Map.Entry<Character, V>>() {
@@ -305,7 +357,7 @@ class CharMapImpl {
                 }                
             };
         }
-        
+            
         
         Entry<Character, V> singleEntry() {
             return new Entry<Character, V>() {

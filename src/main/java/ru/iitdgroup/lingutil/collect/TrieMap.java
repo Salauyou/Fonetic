@@ -5,7 +5,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
+import java.util.Spliterators;
 import java.util.function.BiFunction;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
 
@@ -57,7 +60,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      * Null values are disallowed
      */
     public TrieMap<V> put(CharSequence s, V v) {
-        return put(s, v, null);
+        return merge(s, v, null);
     }
         
     
@@ -68,8 +71,8 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      * @param resolver function of (existing value, offered value) whose result 
      *                 will be associated with the key
      */
-    public TrieMap<V> put(CharSequence s, V v, 
-                          BiFunction<? super V, ? super V, ? extends V> resolver) {
+    public TrieMap<V> merge(CharSequence s, V v, 
+                            BiFunction<? super V, ? super V, ? extends V> resolver) {
         Objects.requireNonNull(v);
         if (root.put(s, 0, v, resolver) > 0)
             size++;
@@ -127,7 +130,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     public TrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another, 
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
         for (Map.Entry<? extends CharSequence, ? extends V> e : another.entrySet())
-            put(e.getKey(), e.getValue(), resolver);
+            merge(e.getKey(), e.getValue(), resolver);
         return this;
     }
     
@@ -140,6 +143,9 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     
     // --------------------- iteration support ------------------------ //
     
+    /**
+     * Iterator over entries
+     */
     @Override
     public Iterator<Entry<CharSequence, V>> iterator() {
         // TODO Auto-generated method stub
@@ -147,6 +153,9 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
+    /**
+     * Iterator over keys
+     */
     public Iterable<CharSequence> keys() {
         return () -> {
             return new Iterator<CharSequence>() {
@@ -158,6 +167,9 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
+    /**
+     * Iterator over values
+     */
     public Iterable<V> values() {
         return () -> {
             return new Iterator<V>() {
@@ -169,12 +181,21 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
+    /**
+     * Stream of entries
+     */
+    public Stream<Entry<CharSequence, V>> stream() {
+        return StreamSupport.stream(
+                  Spliterators.spliterator(iterator(), size, 0), false);
+    }
+    
+    
+    
     // ----------------- node access ------------------- //
     
     public Node<V> getRoot() {
         return root;
     }
-    
     
     
     
@@ -201,7 +222,9 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
                     value = v;
                     return 1;
                 } else {
-                    value = resolver == null ? v : resolver.apply(value, v);
+                    value = resolver == null 
+                          ? v 
+                          : Objects.requireNonNull(resolver.apply(value, v));
                     return 0;
                 }
             }
