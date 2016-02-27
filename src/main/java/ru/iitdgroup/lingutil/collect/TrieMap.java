@@ -20,18 +20,18 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      * traversal can be improved by using special implementation for such nodes.
      *
      * Below is performance comparison against popular implementations, 
-     * including Apache Commons `PatricialTrie`. Tests were performed on list of 
+     * including Apache Commons `PatriciaTrie`. Tests were performed on list of 
      * random 5...10-char string keys, equal amount of existing and non-existing keys. 
      * When testing on `HashMap`, all string keys were recreated to clear cached 
      * hash values.
      *                    
-     * TrieMap<V> vs | HashMap<String, V> | TreeMap<String, V> | PatricialTrie<V>     
-     * --------------+--------------------+--------------------+-----------------                              
+     * TrieMap<V> vs | HashMap<String, V> | TreeMap<String, V> | PatriciaTrie<V>     
+     * --------------+--------------------+--------------------+----------------
      *         get() | ~2 times slower    | ~2 times faster    | ~25% faster
      * containsKey() |
      *      remove() |
      *         put() |
-     * --------------+--------------------+--------------------+-----------------
+     * --------------+--------------------+--------------------+----------------
      *    traversal: |
      *        first  |
      *   subsequent  |

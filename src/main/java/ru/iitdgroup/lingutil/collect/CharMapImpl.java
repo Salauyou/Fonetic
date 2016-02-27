@@ -20,11 +20,11 @@ class CharMapImpl {
     
     static final class MultiCharMap<V> extends CharMap<V> {
 
-        static final int WIDTH = 64;
+        // TODO: extend/shrink width on insertion/removal
+        static final int WIDTH = 16;
 
         @SuppressWarnings("unchecked")
         final Cme<V>[] table = new Cme[WIDTH];
-        long existing = 0;
         int size = 0;
         Cme<V>[] cachedEntries;
 
@@ -57,7 +57,6 @@ class CharMapImpl {
         public CharMap<V> put(char c, V value) {
             checkMutability();
             int p = bitFor(c);
-            existing |= 1 << p;
             Cme<V> e = table[p];
             if (e == null) {
                 table[p] = new Cme<>(this, c, value);
