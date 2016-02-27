@@ -28,9 +28,9 @@ public class TestCharMap {
         assertFalse(m.containsKey('0'));
         assertEquals(0, m.size());
         
-        m = CharMap.create();
-        m.put('A', "alpha");
-        m.put('b', "beta");
+        m = CharMap.<String>create()
+                   .put('A', "alpha")
+                   .put('b', "beta");
         
         assertEquals(2, m.size());
         assertTrue(m.containsKey('A'));
@@ -50,8 +50,13 @@ public class TestCharMap {
     
     @Test
     public void testRemove() {
-        CharMap<String> m = CharMap.create();
-        m.put('A', "alpha").put('2', "two").put('a', "alpha-small").put('q', "query");
+        CharMap<String> m 
+        	= CharMap.<String>create()
+                     .put('A', "alpha")
+                     .put('2', "two")
+                     .put('a', "alpha-small")
+                     .put('q', "query");
+        
         assertEquals(4, m.size());
         m.remove('A');
         assertEquals(3, m.size());
