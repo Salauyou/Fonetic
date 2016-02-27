@@ -6,13 +6,13 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.Iterator;
-import java.util.Map.Entry;
 import java.util.NoSuchElementException;
 
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
 import ru.iitdgroup.lingutil.collect.CharMap;
+import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
 
 
 
@@ -170,17 +170,18 @@ public class TestCharMap {
         CharMap<Integer> m = CharMap.create();
         m.put('1', 1).put('4', 4).put('2', 2).put('3', 3)
          .put('q', -1);
-        Iterator<Entry<Character, Integer>> it = m.iterator();
-        Entry<Character, Integer> e;
+        Iterator<CharEntry<Integer>> it = m.iterator();
+        CharEntry<Integer> e;
+        
         for (int i = 1; i <= 4; i++) {
             assertTrue(it.hasNext());
             e = it.next();
-            assertEquals((Character) String.valueOf(i).charAt(0), e.getKey());
+            assertEquals(String.valueOf(i).charAt(0), e.getChar());
             assertEquals((Integer) i, e.getValue());
         }
         assertTrue(it.hasNext());
         e = it.next();
-        assertEquals((Character)'q', e.getKey());
+        assertEquals('q', e.getChar());
         assertEquals((Integer) (-1),    e.getValue());
         assertFalse(it.hasNext());
         try {
@@ -202,7 +203,7 @@ public class TestCharMap {
         it = m.iterator();
         assertTrue(it.hasNext());
         e = it.next();
-        assertEquals((Character) 'a', e.getKey());
+        assertEquals('a', e.getChar());
         assertEquals((Integer) 1, e.getValue());
         assertFalse(it.hasNext());
         try {

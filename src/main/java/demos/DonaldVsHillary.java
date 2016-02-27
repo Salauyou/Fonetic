@@ -32,8 +32,8 @@ public class DonaldVsHillary {
      * except names of 2016 candidates
      */
     static String hillarize(String html) {
-
-        // headline counters
+        
+        // occurrence counters
         AtomicInteger h = new AtomicInteger(0);
         AtomicInteger d = new AtomicInteger(0);
                 
@@ -63,7 +63,7 @@ public class DonaldVsHillary {
                 })
                 .collect(Collectors.toList());     
 
-        System.out.format("Seems that %s gonna win: %s Hillary headlines vs %s Donald's\n", 
+        System.out.format("Seems that %s gonna win: %s Hillary occurrences vs %s Donald's\n", 
                            h.get() > d.get() ? "Clinton" : "Trump", 
                            h.get(), d.get());
         

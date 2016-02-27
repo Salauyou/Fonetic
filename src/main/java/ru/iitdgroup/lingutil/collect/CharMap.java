@@ -4,8 +4,12 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 
-public abstract class CharMap<V> implements Iterable<Map.Entry<Character, V>> {
+import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
 
+
+public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
+
+    
     private boolean immutable = false;
     
     
@@ -44,7 +48,7 @@ public abstract class CharMap<V> implements Iterable<Map.Entry<Character, V>> {
     
     
     /**
-     * Makes `this` CharMap immutable, so it will throw 
+     * Makes this map immutable, so it will throw 
      * `UnsupportedOperationException` if any modification 
      * operation is called
      */
@@ -64,6 +68,20 @@ public abstract class CharMap<V> implements Iterable<Map.Entry<Character, V>> {
             cm = cm.put(e.getKey(), e.getValue());
         return cm;
     }
+ 
+    
+    /**
+     * Iterator of immutable entries
+     */
+    @Override
+    public abstract Iterator<CharEntry<V>> iterator();
+    
+    
+    /**
+     * Iterator which allows to modify values (unless map is immutable)
+     */
+    public abstract Iterator<Map.Entry<Character, V>> entries();
+    
     
    
     // child classes should call it before modifications
@@ -72,10 +90,18 @@ public abstract class CharMap<V> implements Iterable<Map.Entry<Character, V>> {
             throw new UnsupportedOperationException("This CharMap is immutable");
     }
     
+    
  
+    // ----------- immutable CharEntry ----------- //
+    
+    public static interface CharEntry<V> {
+        char getChar();
+        V    getValue();
+    }
     
     
-    // ----------- factory methods -------------- //
+    
+    // ------------ factory methods --------------- //
     
     /**
      * Creates an empty `CharMap`
@@ -134,9 +160,14 @@ public abstract class CharMap<V> implements Iterable<Map.Entry<Character, V>> {
         }
 
         @Override
-        public Iterator<Entry<Character, V>> iterator() {
+        public Iterator<CharEntry<V>> iterator() {
             return cm.iterator();
         }
+        
+        @Override
+        public Iterator<Map.Entry<Character, V>> entries() {
+            return cm.entries();
+        }       
     }
 
 }

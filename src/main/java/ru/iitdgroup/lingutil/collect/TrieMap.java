@@ -1,14 +1,21 @@
 package ru.iitdgroup.lingutil.collect;
 
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.function.BiFunction;
 
+import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
+
 
 /**
- * Trie-based map
+ * Trie-based map accepting `CharSequence` keys.
+ * <p>
+ * The main goal of implementation is to disclose access to trie nodes,
+ * which is useful in searching algorithms that perform char-by-char
+ * matching
  * 
  * @author Salauyou
  */
@@ -16,36 +23,32 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
 
     /*
      * This trie implementation utilizes the fact that in real-life dictionaries 
-     * a lot of trie nodes have only one child, so speed of access and
+     * about 2/3 of trie nodes have only one child, so speed of access and
      * traversal can be improved by using special implementation for such nodes.
      *
      * Below is performance comparison against popular implementations, 
      * including Apache Commons `PatriciaTrie`. Tests were performed on list of 
      * random 5...10-char string keys, equal amount of existing and non-existing keys. 
-     * When testing on `HashMap`, all string keys were recreated to clear cached 
+     * Before each `HashMap` test, all string keys were recreated to clear cached 
      * hash values.
      *                    
      * TrieMap<V> vs | HashMap<String, V> | TreeMap<String, V> | PatriciaTrie<V>     
      * --------------+--------------------+--------------------+----------------
-     *         get() | ~2 times slower    | ~2 times faster    | ~25% faster
+     *         get() | ~2 times slower    | ~2 times faster    | ~20% faster
      * containsKey() |
      *      remove() |
      *         put() |
+     * putIfAbsent()*| 
      * --------------+--------------------+--------------------+----------------
      *    traversal: |
      *        first  |
      *   subsequent  |
+     *   
+     *  *in TrieMap `putIfAbsent()` is emulated by `put(k, v, (v1, v2) -> v1)`
      */ 
     
     
-    
-    // TODO in Node:
-    //      1) value access: private setValue(), public V getValue()
-    //      2) public iterator over first-level children only
-    //      3) use in trie traversal for TrieMap#iterator()
-    
-    
-    Node<V> root = new Node<>();
+    final Node<V> root = new Node<>();
     int size = 0;
     
     
@@ -54,25 +57,23 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      * Null values are disallowed
      */
     public TrieMap<V> put(CharSequence s, V v) {
-        Objects.requireNonNull(v);
-        if (!containsKey(s))
-            size++;
-        root.put(s, 0, v);
-        return this;
+        return put(s, v, null);
     }
         
     
     /**
      * Puts an entry, resolving conflict if value for the key is already set.
-     * Null values are disallowed
+     * <p>For example, to sum amounts use <tt>map.put(name, amount, Integer::sum)</tt>
      * 
      * @param resolver function of (existing value, offered value) whose result 
-     *           will be associated with the key
+     *                 will be associated with the key
      */
     public TrieMap<V> put(CharSequence s, V v, 
                           BiFunction<? super V, ? super V, ? extends V> resolver) {
         Objects.requireNonNull(v);
-        return put(s, containsKey(s) ? resolver.apply(get(s), v) : v);
+        if (root.put(s, 0, v, resolver) > 0)
+            size++;
+        return this;
     }
         
     
@@ -108,7 +109,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     
     
     public TrieMap<V> putAll(TrieMap<? extends V> another) {
-        return putAll(another, (v1, v2) -> v2);
+        return putAll(another, null);
     }
     
     
@@ -119,7 +120,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     
     
     public TrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another) {
-        return putAll(another, (v1, v2) -> v2);
+        return putAll(another, null);
     }
     
     
@@ -168,22 +169,41 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
+    // ----------------- node access ------------------- //
+    
+    public Node<V> getRoot() {
+        return root;
+    }
+    
+    
+    
     
     // ---------------- Node class ------------------ //
     
-    static private final class Node<V> implements Iterable<Node<V>> {
+    static public final class Node<V> {
         
         int nodeCount;
         CharMap<Node<V>> next;
         V value = null;
+               
+        private Node() { }       
         
         
-        // adds a char sequence into node, creating subnodes if needed,
-        // returns how node count of this node is changed
-        int put(CharSequence s, int from, V v) {
+        // Adds a char sequence into node, creating subnodes if needed.
+        // Returns: 0 - if node count isn't chanded nor value is assigned 
+        //              to some empty node
+        //          1 - if value is asigned to some existing node
+        //    (c + 1) - if node count is changed by `c`
+        int put(CharSequence s, int from, V v, 
+                BiFunction<? super V, ? super V, ? extends V> resolver) {
             if (from == s.length()) {
-                value = v;
-                return 0;
+                if (value == null) {
+                    value = v;
+                    return 1;
+                } else {
+                    value = resolver == null ? v : resolver.apply(value, v);
+                    return 0;
+                }
             }
             int  r = 0;
             char c = s.charAt(from);
@@ -200,8 +220,8 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
                     next = next.put(c, n);
                 }
             }
-            r += n.put(s, from + 1, v);
-            nodeCount += r;
+            r += n.put(s, from + 1, v, resolver);
+            nodeCount += Math.max(0, r - 1);
             return r;
         }
                 
@@ -221,10 +241,17 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
         }
 
         
-        @Override
-        public Iterator<Node<V>> iterator() {
-            // TODO: implement
-            return null;
+        // ------------ public accessors ------------ //
+        
+        public V getValue() {
+            return value;
+        }
+
+
+        public Iterator<CharEntry<Node<V>>> children() {
+            if (next == null)
+                return Collections.emptyIterator();
+            return next.iterator();
         }
     }
 

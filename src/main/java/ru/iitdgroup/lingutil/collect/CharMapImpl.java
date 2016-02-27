@@ -1,5 +1,7 @@
 package ru.iitdgroup.lingutil.collect;
 
+import static java.util.Collections.emptyIterator;
+
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.Map;
@@ -86,20 +88,29 @@ class CharMapImpl {
         
         
         @Override
-        @SuppressWarnings("unchecked")
-        public Iterator<Entry<Character, V>> iterator() {
-            if (cachedEntries == null) {
-                cachedEntries = new Cme[size];
-                int p = 0;
-                for (Cme<V> e : table) {
-                    while (e != null) {
-                        cachedEntries[p++] = e;
-                        e = e.next;
-                    }
+        public Iterator<CharEntry<V>> iterator() {
+            prepareForIteration();
+            return new Iterator<CharEntry<V>> () {
+                int i = 0;
+                
+                @Override public boolean hasNext() { 
+                    return i < cachedEntries.length; 
                 }
-                Arrays.sort(cachedEntries);
-            }
+
+                @Override
+                public CharEntry<V> next() {
+                    if (i >= cachedEntries.length)
+                        throw new NoSuchElementException();
+                    return cachedEntries[i++];
+                }                
+            };
             
+        }
+        
+        
+        @Override
+        public Iterator<Entry<Character, V>> entries() {
+            prepareForIteration();
             return new Iterator<Entry<Character, V>> () {
                 int i = 0;
                 
@@ -114,7 +125,22 @@ class CharMapImpl {
                     return cachedEntries[i++];
                 }                
             };
-            
+        }
+        
+        
+        @SuppressWarnings("unchecked")
+        void prepareForIteration() {
+            if (cachedEntries == null) {
+                cachedEntries = new Cme[size];
+                int p = 0;
+                for (Cme<V> e : table) {
+                    while (e != null) {
+                        cachedEntries[p++] = e;
+                        e = e.next;
+                    }
+                }
+                Arrays.sort(cachedEntries);
+            }
         }
         
         
@@ -123,9 +149,11 @@ class CharMapImpl {
         }
         
         
+        
         // -------- char map entry ---------- //
 
-        static class Cme<V> implements Map.Entry<Character, V>, 
+        static class Cme<V> implements CharEntry<V>, 
+                                       Entry<Character, V>, 
                                        Comparable<Cme<V>> {
             Cme<V> next = null;
             final char c;
@@ -148,11 +176,16 @@ class CharMapImpl {
                 return old;
             }
             
+            @Override
+            public char getChar() {
+                return c;
+            }
+            
             @Override 
             public int compareTo(Cme<V> o) { 
                 return this.c - o.c; 
             }
-        }
+        }        
     }
     
     
@@ -167,13 +200,15 @@ class CharMapImpl {
         @Override public int      size()              { return 0; }
         @Override public CharMap  remove(char c)      { return this; }        
         @Override public CharMap  makeImmutable()     { return IMMUTABLE_EMPTY; }
-        @Override public Iterator iterator()          { return EMPTY_ITERATOR; }
+        @Override public Iterator iterator()          { return emptyIterator(); }
+        @Override public Iterator entries()           { return emptyIterator(); }
         
         @Override
         public CharMap put(char c, Object value) { 
             Objects.requireNonNull(value);
             return new SingleCharMap<>(c, value); 
         }
+        
         
     };
     
@@ -184,7 +219,8 @@ class CharMapImpl {
         @Override public Object   get(char c)         { return null; }
         @Override public boolean  containsKey(char c) { return false; }
         @Override public int      size()              { return 0; }       
-        @Override public Iterator iterator()          { return EMPTY_ITERATOR; }
+        @Override public Iterator iterator()          { return emptyIterator(); }
+        @Override public Iterator entries()           { return emptyIterator(); }
         
         @Override public CharMap put(char c, Object value) { 
             Objects.requireNonNull(value);
@@ -199,14 +235,7 @@ class CharMapImpl {
         
     }.makeImmutable();
     
-    
-    @SuppressWarnings("rawtypes")
-    final static Iterator EMPTY_ITERATOR = new Iterator() {
-        @Override public boolean hasNext() { return false; }
-        @Override public Object  next()    { throw new NoSuchElementException(); }        
-    };
 
- 
     
     // ------------ single-key char map ----------- //
     
@@ -247,8 +276,25 @@ class CharMapImpl {
         }
         
         @Override
-        public Iterator<Entry<Character, V>> iterator() {
-            return new Iterator<Entry<Character, V>>() {
+        public Iterator<CharEntry<V>> iterator() {
+            return new Iterator<CharEntry<V>>() {
+                boolean used = false;                
+                @Override public boolean hasNext() { return !used; }
+                @Override public CharEntry<V> next() {
+                    if (used)
+                        throw new NoSuchElementException();    
+                    used = true;
+                    return new CharEntry<V>() {
+                        @Override public char getChar()  { return c; }
+                        @Override public V    getValue() { return v; }                        
+                    };
+                }                
+            };
+        }        
+        
+        @Override
+        public Iterator<Entry<Character, V>> entries() {
+            return new Iterator<Map.Entry<Character, V>>() {
                 boolean used = false;                
                 @Override public boolean hasNext() { return !used; }
                 @Override public Entry<Character, V> next() {
@@ -258,11 +304,11 @@ class CharMapImpl {
                     return singleEntry();
                 }                
             };
-        }        
+        }
         
-        Map.Entry<Character, V> singleEntry() {
-            return new Map.Entry<Character, V>() {
-                
+        
+        Entry<Character, V> singleEntry() {
+            return new Entry<Character, V>() {
                 @Override public Character getKey()   { return c; }
                 @Override public V         getValue() { return v; }
 
