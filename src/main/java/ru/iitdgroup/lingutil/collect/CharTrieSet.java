@@ -9,13 +9,13 @@ import java.util.stream.StreamSupport;
 /**
  * @author Salauyou
  */
-public class TrieSet implements Iterable<CharSequence> {
+public class CharTrieSet implements Iterable<CharSequence> {
 
-    final TrieMap<Object> m = new TrieMap<>();
+    final CharTrieMap<Object> m = new CharTrieMap<>();
     static final Object X = new Object();
     
     
-    public TrieSet add(CharSequence s) {
+    public CharTrieSet add(CharSequence s) {
         m.put(s, X);
         return this;
     }
@@ -41,7 +41,7 @@ public class TrieSet implements Iterable<CharSequence> {
     }
 
     
-    public TrieSet remove(CharSequence s) {
+    public CharTrieSet remove(CharSequence s) {
         m.remove(s);
         return this;
     }

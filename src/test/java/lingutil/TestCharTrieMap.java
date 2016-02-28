@@ -12,9 +12,9 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import ru.iitdgroup.lingutil.collect.TrieMap;
+import ru.iitdgroup.lingutil.collect.CharTrieMap;
 
-public class TestTrieMap {
+public class TestCharTrieMap {
 
     // 6 unique + 2 repeats
     String[] keys = {"ABC", "A", "ABC", "BC", "ABCDE", "BC", "ABCD", "B"}; 
@@ -23,7 +23,7 @@ public class TestTrieMap {
     @Test
     public void testPutSize() {
 
-        TrieMap<String> t = new TrieMap<>();
+        CharTrieMap<String> t = new CharTrieMap<>();
         assertEquals(0, t.size());
         assertEquals(0, t.nodeCount());
         
@@ -42,7 +42,7 @@ public class TestTrieMap {
     
     @Test
     public void testContainsGet() {
-        TrieMap<String> t = new TrieMap<String>().put("", "EMPTY");
+        CharTrieMap<String> t = new CharTrieMap<String>().put("", "EMPTY");
         for (String s : keys) 
             t.put(s, s);
         
@@ -75,7 +75,7 @@ public class TestTrieMap {
                             Pair.of("Bill",     "0.43"),
                             Pair.of("Mary",     "1.55"));
         
-        TrieMap<BigDecimal> sums = new TrieMap<>();
+        CharTrieMap<BigDecimal> sums = new CharTrieMap<>();
         
         // let's summarize amounts using lambda
         for (Pair<String, String> a : amounts)            

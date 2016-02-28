@@ -10,13 +10,13 @@ import java.util.stream.Collectors;
 import org.junit.Test;
 
 
-import ru.iitdgroup.lingutil.collect.TrieSet;
+import ru.iitdgroup.lingutil.collect.CharTrieSet;
 
-public class TestTrieSet {
+public class TestCharTrieSet {
 
     @Test
     public void testAddContains() {        
-        TrieSet t = new TrieSet();
+        CharTrieSet t = new CharTrieSet();
         
         t.add("ABC");
         t.add("AB");
@@ -49,7 +49,7 @@ public class TestTrieSet {
     
     @Test
     public void testIterator() {
-        TrieSet t = new TrieSet().add("ONE").add("TWO").add("THREE").add("FOUR");
+        CharTrieSet t = new CharTrieSet().add("ONE").add("TWO").add("THREE").add("FOUR");
         assertEquals(Arrays.asList("FOUR", "ONE", "THREE", "TWO"), 
                 t.stream().map(CharSequence::toString).collect(Collectors.toList()));
     }

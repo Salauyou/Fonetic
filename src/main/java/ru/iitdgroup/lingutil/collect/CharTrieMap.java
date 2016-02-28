@@ -14,30 +14,37 @@ import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
 
 
 /**
- * Trie-based map accepting `CharSequence` keys.
+ * Map based on uncompressed char trie.
  * <p>
- * The main goal of implementation is to disclose access to trie nodes,
- * which is useful in searching algorithms that perform char-by-char
- * matching
+ * The main goal of implementation is to disclose access to char-keyed 
+ * nodes, which is useful in searching algorithms that perform 
+ * char-by-char matching
  * 
  * @author Salauyou
  */
-public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
+public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
 
     /*
-     * This trie implementation utilizes the fact that in real-life dictionaries 
-     * about 2/3 of trie nodes have only one child, so speed of access and
-     * traversal can be improved by using special implementation for such nodes.
+     * This map is designed specially for text searching algorithms performing 
+     * char-by-char matching - it allows external access to char-keyed nodes 
+     * and their traversal using `Node#children()` iterator.
+     * 
+     * The price for such functionality is large amount of intermediate
+     * nodes (with no value) and nodes that have only one child. In real-life 
+     * dictionaries proportion of such nodes gains 3/4, so this implementation
+     * requires much more memory than standard string-key maps (~twice more
+     * than `HashMap<String, V>`, even with use of special implementation for 
+     * nodes having one child).
      *
      * Below is performance comparison against popular implementations, 
      * including Apache Commons `PatriciaTrie`. Tests were performed on list of 
-     * random 5...10-char string keys, equal amount of existing and non-existing keys. 
-     * Before each `HashMap` test, all string keys were recreated to clear cached 
-     * hash values.
+     * random 4...10-char string keys, equal amount of existing and non-existing 
+     * keys. Before each test, all query keys were recreated to clear 
+     * cached hash values.
      *                    
      * TrieMap<V> vs | HashMap<String, V> | TreeMap<String, V> | PatriciaTrie<V>     
      * --------------+--------------------+--------------------+----------------
-     *         get() | ~2 times slower    | ~2 times faster    | ~20% faster
+     *         get() | ~25% slower        | ~2 times faster    | ~50% faster
      * containsKey() |
      *      remove() |
      *         put() |
@@ -59,7 +66,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      * Puts an entry, replacing existing value. 
      * Null values are disallowed
      */
-    public TrieMap<V> put(CharSequence s, V v) {
+    public CharTrieMap<V> put(CharSequence s, V v) {
         return merge(s, v, null);
     }
         
@@ -71,7 +78,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
      * @param resolver function of (existing value, offered value) whose result 
      *                 will be associated with the key
      */
-    public TrieMap<V> merge(CharSequence s, V v, 
+    public CharTrieMap<V> merge(CharSequence s, V v, 
                             BiFunction<? super V, ? super V, ? extends V> resolver) {
         Objects.requireNonNull(v);
         if (root.put(s, 0, v, resolver) > 0)
@@ -111,23 +118,23 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
-    public TrieMap<V> putAll(TrieMap<? extends V> another) {
+    public CharTrieMap<V> putAll(CharTrieMap<? extends V> another) {
         return putAll(another, null);
     }
     
     
-    public TrieMap<V> putAll(TrieMap<? extends V> another, 
+    public CharTrieMap<V> putAll(CharTrieMap<? extends V> another, 
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
         throw new UnsupportedOperationException();
     }
     
     
-    public TrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another) {
+    public CharTrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another) {
         return putAll(another, null);
     }
     
     
-    public TrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another, 
+    public CharTrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another, 
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
         for (Map.Entry<? extends CharSequence, ? extends V> e : another.entrySet())
             merge(e.getKey(), e.getValue(), resolver);
@@ -135,7 +142,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     }
     
     
-    public TrieMap<V> remove(CharSequence s) {
+    public CharTrieMap<V> remove(CharSequence s) {
         // TODO: implement
         throw new UnsupportedOperationException();
     }
@@ -159,7 +166,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     public Iterable<CharSequence> keys() {
         return () -> {
             return new Iterator<CharSequence>() {
-                Iterator<Entry<CharSequence, V>> i = TrieMap.this.iterator();                
+                Iterator<Entry<CharSequence, V>> i = CharTrieMap.this.iterator();                
                 @Override public boolean   hasNext() { return i.hasNext(); }                
                 @Override public CharSequence next() { return i.next().getKey(); }
             };
@@ -173,7 +180,7 @@ public class TrieMap<V> implements Iterable<Map.Entry<CharSequence, V>> {
     public Iterable<V> values() {
         return () -> {
             return new Iterator<V>() {
-                Iterator<Entry<CharSequence, V>> i = TrieMap.this.iterator();                
+                Iterator<Entry<CharSequence, V>> i = CharTrieMap.this.iterator();                
                 @Override public boolean hasNext() { return i.hasNext(); }                
                 @Override public V       next()    { return i.next().getValue(); }
             };

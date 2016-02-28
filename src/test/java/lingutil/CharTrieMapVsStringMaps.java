@@ -13,16 +13,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import lingutil.TimeMeasurer.Task;
-import ru.iitdgroup.lingutil.collect.TrieMap;
+import ru.iitdgroup.lingutil.collect.CharTrieMap;
 
 
 
-public class TrieMapVsJavaMaps {
+public class CharTrieMapVsStringMaps {
 
     Map<String, Integer> hashmap = new HashMap<>();
     Map<String, Integer> treemap = new TreeMap<>();
     PatriciaTrie<Integer>  ptmap = new PatriciaTrie<>();
-    TrieMap<Integer>     triemap = new TrieMap<>();   
+    CharTrieMap<Integer>     triemap = new CharTrieMap<>();   
 
     List<String> keys = new ArrayList<>();
     
@@ -50,7 +50,7 @@ public class TrieMapVsJavaMaps {
     @Test
     public void testGet() {
         
-        final int n = 1_000_000;
+        final int n = 200_000;
         TimeMeasurer.measureTime(5, 
            
             new TestMapTask("java.util.HashMap", hashmap, keys, n),
@@ -96,30 +96,37 @@ public class TrieMapVsJavaMaps {
         final int n;
         int c = 0;
         final String name;
+        final List<String> keys;
         
         TestMapTask(String name, Map<String, Integer> map, List<String> keys, int n) {
+            this.keys = keys;
             m = map;
             this.n = n;
             this.name = name;
+            
+        }
+       
+        @Override
+        public void prepare() {
+            workKeys.clear();
             for (int i = 0; i < n; i++) 
                 workKeys.add(new String(keys.get(i % keys.size()).toCharArray()));  // recreate to clear cached hash
             Collections.shuffle(workKeys);
-        }
-
+        }        
+        
         @Override
-        public void run() {
+        public void run() {            
             for (String k : workKeys) {
                 Integer j = m.get(k);
                 if (j != null)
                     c += j;
-            }
+            }            
         }
 
         @Override
         public void displayTime(long millis) {
             System.out.format("%s %s `get()`s took %s ms. Result: %s\n", name, workKeys.size(), millis, c);
-        }
-        
+        }        
     }
     
     

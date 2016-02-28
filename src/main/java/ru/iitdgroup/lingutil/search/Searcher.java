@@ -3,7 +3,7 @@ package ru.iitdgroup.lingutil.search;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import ru.iitdgroup.lingutil.collect.TrieMap;
+import ru.iitdgroup.lingutil.collect.CharTrieMap;
 import ru.iitdgroup.lingutil.match.ScoredMatch;
 
 
@@ -25,8 +25,8 @@ public interface Searcher {
      * Searches for occurrences in a text of patterns across entire dictionary,
      * sending to consumer matches having score at least `minScore`
      */
-    public <T> int search(CharSequence text, TrieMap<? extends T> dictionary, double minScore, 
-                          BiConsumer<ScoredMatch, ? super T> matchConsumer);
+    public <T> int search(CharSequence text, CharTrieMap<? extends T> dictionary, 
+                          double minScore, BiConsumer<ScoredMatch, ? super T> matchConsumer);
     
     
     /**
