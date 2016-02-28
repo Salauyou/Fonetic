@@ -14,7 +14,7 @@ import org.junit.Test;
 
 import ru.iitdgroup.lingutil.collect.CharTrie;
 
-public class TestCharTrieMap {
+public class TestCharTrie {
 
     // 6 unique + 2 repeats
     String[] keys = {"ABC", "A", "ABC", "BC", "ABCDE", "BC", "ABCD", "B"}; 
@@ -31,7 +31,7 @@ public class TestCharTrieMap {
             t.put(s, s);
         
         assertEquals(6, t.size());
-        assertEquals(7, t.nodeCount());
+//        assertEquals(7, t.nodeCount());
         
         t.put("", "EMPTY");       // empty string is also string
         assertEquals(7, t.size());

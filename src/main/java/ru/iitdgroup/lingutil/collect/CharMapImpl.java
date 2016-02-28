@@ -184,8 +184,8 @@ class CharMapImpl {
         List<Cme<V>> cacheEntries() {
             final List<Cme<V>> cached = new ArrayList<>(size);
             for (Cme<V> e : table) {
-            	while (e != null) {
-            		cached.add(e);
+                while (e != null) {
+                    cached.add(e);
                     e = e.next;
                 }
             }

@@ -1,16 +1,18 @@
 package ru.iitdgroup.lingutil.collect;
 
+import static java.util.Objects.requireNonNull;
+
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Objects;
 import java.util.Spliterators;
 import java.util.function.BiFunction;
 import java.util.stream.Stream;
 import java.util.stream.StreamSupport;
 
 import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
+import ru.iitdgroup.lingutil.collect.CharMapImpl.SingleCharMap;
 
 
 /**
@@ -18,7 +20,7 @@ import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
  * <p>
  * The main goal of implementation is to disclose access to char-keyed 
  * nodes, which is useful in searching algorithms that perform 
- * char-by-char matching
+ * char-by-char matching over large set of short char sequences
  * 
  * @author Salauyou
  */
@@ -26,9 +28,9 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
 
     /*
      * This map is designed specially for text searching algorithms 
-     * performing char-by-char matching. It allows external access 
-     * to char-keyed nodes and their traversal using `Node#children()` 
-     * iterator.
+     * performing char-by-char matching over large set of short strings. 
+     * It provides external access to char-keyed nodes and their 
+     * traversal using `Node#children()` iterator.
      * 
      * The price for such functionality is large amount of intermediate
      * nodes (with no value) and nodes that have only one child. In 
@@ -37,23 +39,20 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
      * string-key maps (~twice more than `HashMap<String, V>`, even with 
      * use of special implementation for nodes having one child).
      *
-     * Below is `CharTrieMap` performance comparison against popular 
-     * map implementations, including Apache Commons `PatriciaTrie`. 
-     * Tests were performed on 200K random 3...11-char `String` keys, 
-     * equal amount of existing and non-existing keys. Before each test, 
+     * Below is `TrieMap` performance comparison against popular map 
+     * implementations, including Apache Commons `PatriciaTrie`. Tests 
+     * were performed on 200K random 3...11-char `String` keys, equal 
+     * amount of existing and non-existing keys. Before each test, 
      * all keys were recreated to clear cached hash values.
      *     
-     * As compared to | HashMap       | TreeMap       | PatriciaTrie     
-     * ---------------+------------ --+---------------+---------------
-     *          get() | ~1.4x slower  | ~2x faster    | ~1.4x faster
-     *  containsKey() | ~1.4x slower  | ~2x faster    | ~1.4x faster
-     *          put() | ~1.7x slower  | ~2.1x faster  | ~1.3x faster
-     *       remove() |
-     *  putIfAbsent() | ~1.7x slower  | ~2.3x faster  | ~1.8x faster
-     * ---------------+----------- ---+---------------+---------------
-     *     traversal: |
-     *         first  |
-     *    subsequent  |
+     * As compared to: | HashMap       | TreeMap       | PatriciaTrie     
+     * ----------------+------------ --+---------------+---------------
+     *           get() | ~1.4x slower  | ~2x faster    | ~1.5x faster
+     *   containsKey() | ~1.4x slower  | ~2x faster    | ~1.5x faster
+     *           put() | ~1.8x slower  | ~2.2x faster  | ~1.3x faster
+     *        remove() |
+     *   putIfAbsent() | ~1.8x slower  | ~2.3x faster  | ~1.8x faster
+     * entry traversal |
      *   
      */ 
     
@@ -72,40 +71,54 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
         
     
     /**
+     * Puts and entry if the key is not already associated with some value
+     */
+    public CharTrie<V> putIfAbsent(CharSequence s, V v) {
+        return merge(s, v, (v1, v2) -> v1);
+    }
+    
+    
+    /**
      * Puts an entry, resolving conflict if the key is already associated 
      * with some value.
-     * <p>For example, to sum amounts use <tt>map.put(name, amount, Integer::sum)</tt>
+     * <p>E. g., to sum amounts use <tt>map.put(name, amount, Integer::sum)</tt>
      * 
      * @param resolver function of (existing value, offered value) whose result 
      *                 will be associated with the key
      */
     public CharTrie<V> merge(CharSequence s, V v, 
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
-        Objects.requireNonNull(v);
-        if (root.put(s, 0, v, resolver) > 0)
-            size++;
+        requireNonNull(v);
+        // search existing prefix for key
+        Prefix<V> pf = findLongestPrefix(root, s, 0);
+        Node<V> n = pf.ending;
+        int     p = pf.p;
+        // prefix covers the key?
+        if (p == s.length()) {
+            V old = n.value;
+            if (old == null) {
+                n.value = v;
+                size++;
+            } else 
+                n.value = resolver == null 
+                        ? v : requireNonNull(resolver.apply(old, v));
+            return this;
+        }
+        // need to append linear branch
+        Node<V> b = buildLinearBranch(s, p, v);
+        n.next = n.next == null 
+               ? new SingleCharMap<>(s.charAt(p), b)
+               : n.next.put(s.charAt(p), b);
+        size++;
         return this;
     }
-     
-    
-    final BiFunction<V, V, V> FIRST_ARGUMENT = (v1, v2) -> v1; 
-    
-    /**
-     * Puts and entry if the key is not already associated with some value
-     */
-    public CharTrie<V> putIfAbsent(CharSequence s, V v) {
-        Objects.requireNonNull(v);
-        if (root.put(s, 0, v, FIRST_ARGUMENT) > 0)
-            size++;
-        return this;
-    }
-    
-    
+   
+
     /**
      * Checks whether there is a value associated with the key
      */
     public boolean containsKey(CharSequence s) {
-        return root.contains(s, 0);
+        return get(s) != null;
     }
         
     
@@ -113,7 +126,8 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
      * Returns the value associated with the key
      */
     public V get(CharSequence s) {
-        return root.get(s, 0);
+        Prefix<V> pf = findLongestPrefix(root, s, 0);
+        return pf.p == s.length() ? pf.ending.value : null;
     }
     
     
@@ -128,7 +142,7 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
     
     
     public int nodeCount() {
-        return root.nodeCount;
+        return 0;
     }
     
     
@@ -168,6 +182,46 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
         return this;
     }
     
+    
+    
+    // --------------- utility stuff --------------- //
+    
+    static <V> Node<V> buildLinearBranch(CharSequence s, int from, V v) {
+        Node<V> nn;
+        Node<V> b = new Node<V>(v);
+        for (int i = s.length() - 1; i > from; i--) {
+            nn = new Node<>();
+            nn.next = new SingleCharMap<>(s.charAt(i), b);
+            b = nn;
+        }
+        return b;
+    }
+    
+    
+    static <V> Prefix<V> findLongestPrefix(Node<V> n, CharSequence s, int from) {
+        int len = s.length();
+        Node<V> nn;
+        int p = from;        
+        while (p < len && n.next != null 
+               && (nn = n.next.get(s.charAt(p))) != null) {
+            n = nn;
+            p++;
+        }
+        return new Prefix<>(n, p);
+    }
+    
+    
+    static final class Prefix<V> {
+        final Node<V> ending;
+        final int p;
+        
+        Prefix(Node<V> node, int p) {
+            this.ending = node;
+            this.p = p;
+        }
+    }
+    
+
     
     // --------------------- iteration support ------------------------ //
     
@@ -230,67 +284,16 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
     // ---------------- Node class ------------------ //
     
     static public final class Node<V> {
-        
-        int nodeCount;          // TODO: remove (calculate on request)
+
         CharMap<Node<V>> next;
         V value = null;
                
-        private Node() { }       
+        private Node() { }
         
-        
-        // Adds a char sequence into node, creating subnodes if needed.
-        // Returns: 0 - if node count isn't chanded nor value is assigned 
-        //              to some empty node
-        //          1 - if value is asigned to some existing node
-        //    (c + 1) - if node count is changed by `c`
-        int put(CharSequence s, int from, V v, 
-                BiFunction<? super V, ? super V, ? extends V> resolver) {
-            if (from == s.length()) {
-                if (value == null) {
-                    value = v;
-                    return 1;
-                } else {
-                    value = resolver == null 
-                          ? v 
-                          : Objects.requireNonNull(resolver.apply(value, v));
-                    return 0;
-                }
-            }
-            int  r = 0;
-            char c = s.charAt(from);
-            Node<V> n;
-            if (next == null) {
-                r = 1;
-                n = new Node<>();
-                next = new CharMapImpl.SingleCharMap<>(c, n);
-            } else {
-                n = next.get(c);
-                if (n == null) {
-                    n = new Node<>();
-                    r = 1;
-                    next = next.put(c, n);
-                }
-            }
-            r += n.put(s, from + 1, v, resolver);
-            nodeCount += Math.max(0, r - 1);
-            return r;
-        }
-                
-        
-        boolean contains(CharSequence s, int from) {
-            return get(s, from) != null;
-        }  
-            
-        
-        V get(CharSequence s, int from) {
-            if (from == s.length())
-                return value;
-            if (next == null)
-                return null;
-            Node<V> n = next.get(s.charAt(from));
-            return n == null ? null : n.get(s, from + 1); 
-        }
-
+        private Node(V value) { 
+            this.value = value;
+        }       
+  
         
         // ------------ public accessors ------------ //
         
@@ -298,13 +301,15 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
             return value;
         }
 
-        
         public Iterator<CharEntry<Node<V>>> children() {
             if (next == null)
                 return Collections.emptyIterator();
             return next.iterator();
         }
     }
+
+    
+    
 
     
 }
