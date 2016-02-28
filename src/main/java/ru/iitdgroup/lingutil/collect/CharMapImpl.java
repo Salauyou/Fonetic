@@ -2,8 +2,10 @@ package ru.iitdgroup.lingutil.collect;
 
 import static java.util.Collections.emptyIterator;
 
-import java.util.Arrays;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.NoSuchElementException;
@@ -23,13 +25,11 @@ class CharMapImpl {
     
     static final class MultiCharMap<V> extends CharMap<V> {
 
-        // TODO: extend/shrink width on insertion/removal
         static final int WIDTH = 16;
 
         @SuppressWarnings("unchecked")
         final Cme<V>[] table = new Cme[WIDTH];
         int size = 0;
-        Cme<V>[] cachedEntries;
 
         
         // instantiation within package only
@@ -67,7 +67,6 @@ class CharMapImpl {
             Cme<V> e = table[p];
             if (e == null) {
                 table[p] = new Cme<>(this, c, value);
-                cachedEntries = null;
                 size++;
                 return this;
             }
@@ -77,7 +76,6 @@ class CharMapImpl {
                 e.v = value;
             else {
                 e.next = new Cme<>(this, c, value);
-                cachedEntries = null;
                 size++;
             }
             return this;
@@ -92,7 +90,6 @@ class CharMapImpl {
             Cme<V> e = table[p];
             if (e == null) {
                 table[p] = new Cme<>(this, c, value);
-                cachedEntries = null;
                 size++;
                 return this;
             }
@@ -102,7 +99,6 @@ class CharMapImpl {
                 e.v = Objects.requireNonNull(resolver.apply(e.v, value));
             else {
                 e.next = new Cme<>(this, c, value);
-                cachedEntries = null;
                 size++;
             }
             return this;
@@ -144,19 +140,19 @@ class CharMapImpl {
         
         @Override
         public Iterator<CharEntry<V>> iterator() {
-            prepareForIteration();
             return new Iterator<CharEntry<V>> () {
                 int i = 0;
+                final List<Cme<V>> cached = cacheEntries();
                 
                 @Override public boolean hasNext() { 
-                    return i < cachedEntries.length; 
+                    return i < cached.size();
                 }
 
                 @Override
                 public CharEntry<V> next() {
-                    if (i >= cachedEntries.length)
+                    if (i >= cached.size())
                         throw new NoSuchElementException();
-                    return cachedEntries[i++];
+                    return cached.get(i++);
                 }                
             };
             
@@ -165,37 +161,36 @@ class CharMapImpl {
         
         @Override
         public Iterator<Entry<Character, V>> entries() {
-            prepareForIteration();
+
             return new Iterator<Entry<Character, V>> () {
                 int i = 0;
+                final List<Cme<V>> cached = cacheEntries();
                 
                 @Override public boolean hasNext() { 
-                    return i < cachedEntries.length; 
+                    return i < cached.size(); 
                 }
 
                 @Override
                 public Entry<Character, V> next() {
-                    if (i >= cachedEntries.length)
+                    if (i >= cached.size())
                         throw new NoSuchElementException();
-                    return cachedEntries[i++];
+                    return cached.get(i++);
                 }                
             };
         }
         
         
-        @SuppressWarnings("unchecked")
-        void prepareForIteration() {
-            if (cachedEntries == null) {
-                cachedEntries = new Cme[size];
-                int p = 0;
-                for (Cme<V> e : table) {
-                    while (e != null) {
-                        cachedEntries[p++] = e;
-                        e = e.next;
-                    }
+        
+        List<Cme<V>> cacheEntries() {
+            final List<Cme<V>> cached = new ArrayList<>(size);
+            for (Cme<V> e : table) {
+            	while (e != null) {
+            		cached.add(e);
+                    e = e.next;
                 }
-                Arrays.sort(cachedEntries);
             }
+            Collections.sort(cached);
+            return cached;
         }
         
         
