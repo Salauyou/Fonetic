@@ -12,7 +12,7 @@ import java.util.List;
 import org.apache.commons.lang3.tuple.Pair;
 import org.junit.Test;
 
-import ru.iitdgroup.lingutil.collect.CharTrieMap;
+import ru.iitdgroup.lingutil.collect.CharTrie;
 
 public class TestCharTrieMap {
 
@@ -23,7 +23,7 @@ public class TestCharTrieMap {
     @Test
     public void testPutSize() {
 
-        CharTrieMap<String> t = new CharTrieMap<>();
+        CharTrie<String> t = new CharTrie<>();
         assertEquals(0, t.size());
         assertEquals(0, t.nodeCount());
         
@@ -42,7 +42,7 @@ public class TestCharTrieMap {
     
     @Test
     public void testContainsGet() {
-        CharTrieMap<String> t = new CharTrieMap<String>().put("", "EMPTY");
+        CharTrie<String> t = new CharTrie<String>().put("", "EMPTY");
         for (String s : keys) 
             t.put(s, s);
         
@@ -75,7 +75,7 @@ public class TestCharTrieMap {
                             Pair.of("Bill",     "0.43"),
                             Pair.of("Mary",     "1.55"));
         
-        CharTrieMap<BigDecimal> sums = new CharTrieMap<>();
+        CharTrie<BigDecimal> sums = new CharTrie<>();
         
         // let's summarize amounts using lambda
         for (Pair<String, String> a : amounts)            

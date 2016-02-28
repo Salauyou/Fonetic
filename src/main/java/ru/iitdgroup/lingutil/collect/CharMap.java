@@ -59,6 +59,12 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
     
     
     /**
+     * Removes all mappings
+     */
+    public abstract CharMap<V> clear();
+    
+    
+    /**
      * Makes this map immutable, so it will throw 
      * `UnsupportedOperationException` if any modification 
      * operation is called
@@ -197,6 +203,12 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
             return this;
         }
 
+        @Override
+        public CharMap<V> clear() {
+            cm = cm.clear();
+            return this;
+        }
+        
         @Override
         public Iterator<CharEntry<V>> iterator() {
             return cm.iterator();

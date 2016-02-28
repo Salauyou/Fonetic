@@ -135,6 +135,14 @@ class CharMapImpl {
         
         
         @Override
+        @SuppressWarnings("unchecked")
+        public CharMap<V> clear() {
+            checkMutability();
+            return MUTABLE_EMPTY;
+        } 
+        
+        
+        @Override
         public Iterator<CharEntry<V>> iterator() {
             prepareForIteration();
             return new Iterator<CharEntry<V>> () {
@@ -233,7 +241,7 @@ class CharMapImpl {
             public int compareTo(Cme<V> o) { 
                 return this.c - o.c; 
             }
-        }     
+        }  
     }
     
     
@@ -247,9 +255,10 @@ class CharMapImpl {
         @Override public boolean  containsKey(char c) { return false; }
         @Override public int      size()              { return 0; }
         @Override public CharMap  remove(char c)      { return this; }        
+        @Override public CharMap  clear()             { return this; }
         @Override public CharMap  makeImmutable()     { return IMMUTABLE_EMPTY; }
         @Override public Iterator iterator()          { return emptyIterator(); }
-        @Override public Iterator entries()           { return emptyIterator(); }
+        @Override public Iterator entries()           { return emptyIterator(); }        
         
         @Override
         public CharMap put(char c, Object value) { 
@@ -287,6 +296,11 @@ class CharMapImpl {
         @Override public CharMap remove(char c) { 
             checkMutability();                // this will always throw
             return this; 
+        }
+        
+        @Override public CharMap clear() {
+            checkMutability();                // this will always throw
+            return this;
         }
     }.makeImmutable();
     
@@ -338,6 +352,14 @@ class CharMapImpl {
         public CharMap<V> remove(char c) { 
             checkMutability();
             return c == this.c ? MUTABLE_EMPTY : this;
+        }
+        
+        
+        @Override
+        @SuppressWarnings("unchecked")
+        public CharMap<V> clear() { 
+            checkMutability();
+            return MUTABLE_EMPTY;
         }
         
         

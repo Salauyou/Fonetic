@@ -22,70 +22,84 @@ import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
  * 
  * @author Salauyou
  */
-public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
+public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
 
     /*
-     * This map is designed specially for text searching algorithms performing 
-     * char-by-char matching - it allows external access to char-keyed nodes 
-     * and their traversal using `Node#children()` iterator.
+     * This map is designed specially for text searching algorithms 
+     * performing char-by-char matching. It allows external access 
+     * to char-keyed nodes and their traversal using `Node#children()` 
+     * iterator.
      * 
      * The price for such functionality is large amount of intermediate
-     * nodes (with no value) and nodes that have only one child. In real-life 
-     * dictionaries proportion of such nodes gains 3/4, so this implementation
-     * requires much more memory than standard string-key maps (~twice more
-     * than `HashMap<String, V>`, even with use of special implementation for 
-     * nodes having one child).
+     * nodes (with no value) and nodes that have only one child. In 
+     * natural language dictionaries proportion of such nodes gains 3/4, 
+     * so this implementation requires much more memory than standard 
+     * string-key maps (~twice more than `HashMap<String, V>`, even with 
+     * use of special implementation for nodes having one child).
      *
-     * Below is performance comparison against popular implementations, 
-     * including Apache Commons `PatriciaTrie`. Tests were performed on list of 
-     * random 4...10-char string keys, equal amount of existing and non-existing 
-     * keys. Before each test, all query keys were recreated to clear 
-     * cached hash values.
-     *                    
-     * TrieMap<V> vs | HashMap<String, V> | TreeMap<String, V> | PatriciaTrie<V>     
-     * --------------+--------------------+--------------------+----------------
-     *         get() | ~25% slower        | ~2 times faster    | ~50% faster
-     * containsKey() |
-     *      remove() |
-     *         put() |
-     * putIfAbsent()*| 
-     * --------------+--------------------+--------------------+----------------
-     *    traversal: |
-     *        first  |
-     *   subsequent  |
+     * Below is `CharTrieMap` performance comparison against popular 
+     * map implementations, including Apache Commons `PatriciaTrie`. 
+     * Tests were performed on 200K random 3...11-char `String` keys, 
+     * equal amount of existing and non-existing keys. Before each test, 
+     * all keys were recreated to clear cached hash values.
+     *     
+     * As compared to | HashMap       | TreeMap       | PatriciaTrie     
+     * ---------------+------------ --+---------------+---------------
+     *          get() | ~1.4x slower  | ~2x faster    | ~1.4x faster
+     *  containsKey() | ~1.4x slower  | ~2x faster    | ~1.4x faster
+     *          put() | ~1.7x slower  | ~2.1x faster  | ~1.3x faster
+     *       remove() |
+     *  putIfAbsent() | ~1.7x slower  | ~2.3x faster  | ~1.8x faster
+     * ---------------+----------- ---+---------------+---------------
+     *     traversal: |
+     *         first  |
+     *    subsequent  |
      *   
-     *  *in TrieMap `putIfAbsent()` is emulated by `put(k, v, (v1, v2) -> v1)`
      */ 
     
     
-    final Node<V> root = new Node<>();
+    volatile Node<V> root = new Node<>();
     int size = 0;
     
     
     /**
-     * Puts an entry, replacing existing value. 
-     * Null values are disallowed
+     * Associate the given key with given value, replacing
+     * existing value, if set. Null values are disallowed
      */
-    public CharTrieMap<V> put(CharSequence s, V v) {
+    public CharTrie<V> put(CharSequence s, V v) {
         return merge(s, v, null);
     }
         
     
     /**
-     * Puts an entry, resolving conflict if value for the key is already set.
+     * Puts an entry, resolving conflict if the key is already associated 
+     * with some value.
      * <p>For example, to sum amounts use <tt>map.put(name, amount, Integer::sum)</tt>
      * 
      * @param resolver function of (existing value, offered value) whose result 
      *                 will be associated with the key
      */
-    public CharTrieMap<V> merge(CharSequence s, V v, 
-                            BiFunction<? super V, ? super V, ? extends V> resolver) {
+    public CharTrie<V> merge(CharSequence s, V v, 
+                             BiFunction<? super V, ? super V, ? extends V> resolver) {
         Objects.requireNonNull(v);
         if (root.put(s, 0, v, resolver) > 0)
             size++;
         return this;
     }
-        
+     
+    
+    final BiFunction<V, V, V> FIRST_ARGUMENT = (v1, v2) -> v1; 
+    
+    /**
+     * Puts and entry if the key is not already associated with some value
+     */
+    public CharTrie<V> putIfAbsent(CharSequence s, V v) {
+        Objects.requireNonNull(v);
+        if (root.put(s, 0, v, FIRST_ARGUMENT) > 0)
+            size++;
+        return this;
+    }
+    
     
     /**
      * Checks whether there is a value associated with the key
@@ -118,23 +132,23 @@ public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
     }
     
     
-    public CharTrieMap<V> putAll(CharTrieMap<? extends V> another) {
+    public CharTrie<V> putAll(CharTrie<? extends V> another) {
         return putAll(another, null);
     }
     
     
-    public CharTrieMap<V> putAll(CharTrieMap<? extends V> another, 
+    public CharTrie<V> putAll(CharTrie<? extends V> another, 
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
         throw new UnsupportedOperationException();
     }
     
     
-    public CharTrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another) {
+    public CharTrie<V> putAll(Map<? extends CharSequence, ? extends V> another) {
         return putAll(another, null);
     }
     
     
-    public CharTrieMap<V> putAll(Map<? extends CharSequence, ? extends V> another, 
+    public CharTrie<V> putAll(Map<? extends CharSequence, ? extends V> another, 
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
         for (Map.Entry<? extends CharSequence, ? extends V> e : another.entrySet())
             merge(e.getKey(), e.getValue(), resolver);
@@ -142,9 +156,16 @@ public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
     }
     
     
-    public CharTrieMap<V> remove(CharSequence s) {
+    public CharTrie<V> remove(CharSequence s) {
         // TODO: implement
         throw new UnsupportedOperationException();
+    }
+    
+    
+    public CharTrie<V> clear() {
+        root = new Node<V>();
+        size = 0;
+        return this;
     }
     
     
@@ -166,7 +187,7 @@ public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
     public Iterable<CharSequence> keys() {
         return () -> {
             return new Iterator<CharSequence>() {
-                Iterator<Entry<CharSequence, V>> i = CharTrieMap.this.iterator();                
+                Iterator<Entry<CharSequence, V>> i = CharTrie.this.iterator();                
                 @Override public boolean   hasNext() { return i.hasNext(); }                
                 @Override public CharSequence next() { return i.next().getKey(); }
             };
@@ -180,7 +201,7 @@ public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
     public Iterable<V> values() {
         return () -> {
             return new Iterator<V>() {
-                Iterator<Entry<CharSequence, V>> i = CharTrieMap.this.iterator();                
+                Iterator<Entry<CharSequence, V>> i = CharTrie.this.iterator();                
                 @Override public boolean hasNext() { return i.hasNext(); }                
                 @Override public V       next()    { return i.next().getValue(); }
             };
@@ -210,7 +231,7 @@ public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
     
     static public final class Node<V> {
         
-        int nodeCount;
+        int nodeCount;          // TODO: remove (calculate on request)
         CharMap<Node<V>> next;
         V value = null;
                
@@ -277,7 +298,7 @@ public class CharTrieMap<V> implements Iterable<Entry<CharSequence, V>> {
             return value;
         }
 
-
+        
         public Iterator<CharEntry<Node<V>>> children() {
             if (next == null)
                 return Collections.emptyIterator();

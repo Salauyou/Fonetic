@@ -11,7 +11,7 @@ import java.util.stream.StreamSupport;
  */
 public class CharTrieSet implements Iterable<CharSequence> {
 
-    final CharTrieMap<Object> m = new CharTrieMap<>();
+    final CharTrie<Object> m = new CharTrie<>();
     static final Object X = new Object();
     
     

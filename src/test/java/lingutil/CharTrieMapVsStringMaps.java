@@ -13,35 +13,40 @@ import org.junit.Before;
 import org.junit.Test;
 
 import lingutil.TimeMeasurer.Task;
-import ru.iitdgroup.lingutil.collect.CharTrieMap;
+import ru.iitdgroup.lingutil.collect.CharTrie;
 
 
 
 public class CharTrieMapVsStringMaps {
 
-    Map<String, Integer> hashmap = new HashMap<>();
-    Map<String, Integer> treemap = new TreeMap<>();
-    PatriciaTrie<Integer>  ptmap = new PatriciaTrie<>();
-    CharTrieMap<Integer>     triemap = new CharTrieMap<>();   
+    Map<String, Integer> hashmap;
+    Map<String, Integer> treemap;
+    PatriciaTrie<Integer> ptmap;
+    CharTrie<Integer> triemap;   
 
-    List<String> keys = new ArrayList<>();
-    
+    List<String> existingKeys = new ArrayList<>();
+    List<String> absentKeys = new ArrayList<>();
     
     @Before
-    public void prepare() {
+    public void before() {
+        hashmap = new HashMap<>();
+        treemap = new TreeMap<>();
+        ptmap   = new PatriciaTrie<>();
+        triemap = new CharTrie<>(); 
+        
         int n = 100_000;
         int tl = 0;
         for (int i = 0; i < n; i++) {
             String k = randomString(7);
             tl += k.length();
-            keys.add(k);
+            existingKeys.add(k);
             hashmap.put(k, i);
             triemap.put(k, i);
             treemap.put(k, i);
             ptmap.put(k, i);
-            keys.add(randomString(7));
+            absentKeys.add(randomString(7));
         }        
-        System.out.format("Summary key length: %s, Nodes in TrieMap: %s\n\n", 
+        System.out.format("\n\nSummary key length: %s, Nodes in TrieMap: %s\n\n", 
                            tl, triemap.nodeCount());
     }
     
@@ -49,83 +54,267 @@ public class CharTrieMapVsStringMaps {
     
     @Test
     public void testGet() {
-        
-        final int n = 200_000;
-        TimeMeasurer.measureTime(5, 
-           
-            new TestMapTask("java.util.HashMap", hashmap, keys, n),
-            new TestMapTask("java.util.TreeMap", treemap, keys, n),
-            new TestMapTask("ap.c.PatriciaTrie", ptmap,   keys, n),
-            
-            // TrieMap
-            new Task() {
-            
-                int c = 0;
-                List<String> workKeys = new ArrayList<>();
-                
-                @Override
-                public void prepare() {
-                    workKeys.clear();
-                    for (int i = 0; i < n; i++) 
-                        workKeys.add(keys.get(i % keys.size()));
-                    Collections.shuffle(workKeys);
-                }
-                
-                @Override
-                public void run() {
-                    for (String k : workKeys) {
-                        Integer j = triemap.get(k);
-                        if (j != null)
-                            c += j;
-                    }
-                }
-
-                @Override
-                public void displayTime(long millis) {
-                    System.out.format("          TrieMap %s `get()`s took %s ms. Result: %s\n\n", workKeys.size(), millis, c);
-                }
-            });        
+        TimeMeasurer.measureTime(5,                        
+            new TestGet("java.util.HashMap", hashmap, existingKeys, absentKeys),
+            new TestGet("java.util.TreeMap", treemap, existingKeys, absentKeys),
+            new TestGet("ap.c.PatriciaTrie", ptmap,   existingKeys, absentKeys),
+            new TestGet("      CharTrieMap", triemap, existingKeys, absentKeys));
+    }
+    
+    
+    @Test
+    public void testContainsKey() {
+        TimeMeasurer.measureTime(5,                        
+            new TestContainsKey("java.util.HashMap", hashmap, existingKeys, absentKeys),
+            new TestContainsKey("java.util.TreeMap", treemap, existingKeys, absentKeys),
+            new TestContainsKey("ap.c.PatriciaTrie", ptmap,   existingKeys, absentKeys),
+            new TestContainsKey("      CharTrieMap", triemap, existingKeys, absentKeys));
+    }
+    
+    
+    @Test
+    public void testPut() {
+        TimeMeasurer.measureTime(5,                        
+            new TestPut("java.util.HashMap", hashmap, existingKeys),
+            new TestPut("java.util.TreeMap", treemap, existingKeys),
+            new TestPut("ap.c.PatriciaTrie", ptmap,   existingKeys),
+            new TestPut("      CharTrieMap", triemap, existingKeys));
+    }
+    
+    
+    @Test
+    public void testPutIfAbsent() {
+        TimeMeasurer.measureTime(5,                        
+            new TestPutIfAbsent("java.util.HashMap", hashmap, existingKeys, absentKeys),
+            new TestPutIfAbsent("java.util.TreeMap", treemap, existingKeys, absentKeys),
+            new TestPutIfAbsent("ap.c.PatriciaTrie", ptmap,   existingKeys, absentKeys),
+            new TestPutIfAbsent("      CharTrieMap", triemap, existingKeys, absentKeys));
     }
     
     
     
-    static class TestMapTask implements Task {
+    
+    static class TestGet implements Task {
         
-        final Map<String, Integer> m;
-        final List<String> workKeys = new ArrayList<>();
-        final int n;
+        final Object m;
+        List<String> workKeys = new ArrayList<>();
         int c = 0;
         final String name;
-        final List<String> keys;
         
-        TestMapTask(String name, Map<String, Integer> map, List<String> keys, int n) {
-            this.keys = keys;
+        TestGet(String name, Object map, List<String> existingKeys, List<String> absentKeys) {
+            this.workKeys.addAll(existingKeys);
+            this.workKeys.addAll(absentKeys);
             m = map;
-            this.n = n;
             this.name = name;
-            
         }
        
         @Override
         public void prepare() {
-            workKeys.clear();
-            for (int i = 0; i < n; i++) 
-                workKeys.add(new String(keys.get(i % keys.size()).toCharArray()));  // recreate to clear cached hash
-            Collections.shuffle(workKeys);
+            List<String> newKeys = new ArrayList<>();
+            for (String k : workKeys) 
+                newKeys.add(new String(k.toCharArray()));  // recreate to clear cached hash
+            Collections.shuffle(newKeys);
+            workKeys = newKeys;
+            c = 0;
         }        
         
         @Override
         public void run() {            
-            for (String k : workKeys) {
-                Integer j = m.get(k);
-                if (j != null)
-                    c += j;
-            }            
+            if (m instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> mm = (Map<String, Integer>) m;
+                for (String k : workKeys) {
+                    Integer j = mm.get(k);
+                    if (j != null)
+                        c += j;
+                }
+            }       
+            if (m instanceof CharTrie) {
+                @SuppressWarnings("unchecked")
+                CharTrie<Integer> mm = (CharTrie<Integer>) m;
+                for (String k : workKeys) {
+                    Integer j = mm.get(k);
+                    if (j != null)
+                        c += j;
+                }
+            }
         }
 
         @Override
         public void displayTime(long millis) {
             System.out.format("%s %s `get()`s took %s ms. Result: %s\n", name, workKeys.size(), millis, c);
+        }        
+    }
+    
+    
+    static class TestContainsKey implements Task {
+        
+        final Object m;
+        List<String> workKeys = new ArrayList<>();
+        int c = 0;
+        final String name;
+        
+        TestContainsKey(String name, Object map, List<String> existingKeys, List<String> absentKeys) {
+            this.workKeys.addAll(existingKeys);
+            this.workKeys.addAll(absentKeys);
+            m = map;
+            this.name = name;
+        }
+       
+        @Override
+        public void prepare() {
+            List<String> newKeys = new ArrayList<>();
+            for (String k : workKeys) 
+                newKeys.add(new String(k.toCharArray()));  // recreate to clear cached hash
+            Collections.shuffle(newKeys);
+            workKeys = newKeys;
+            c = 0;
+        }   
+        
+        @Override
+        public void run() {            
+            if (m instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> mm = (Map<String, Integer>) m;
+                for (String k : workKeys) 
+                    c += mm.containsKey(k) ? 1 : 0;
+            }       
+            if (m instanceof CharTrie) {
+                @SuppressWarnings("unchecked")
+                CharTrie<Integer> mm = (CharTrie<Integer>) m;
+                for (String k : workKeys) 
+                    c += mm.containsKey(k) ? 1 : 0;
+            }
+        }
+
+        @Override
+        public void displayTime(long millis) {
+            System.out.format("%s %s `containsKey()`s took %s ms. Result: %s\n", name, workKeys.size(), millis, c);
+        }        
+    }
+    
+    
+    
+    
+    static class TestPutIfAbsent implements Task {
+        
+        final Object m;
+        final List<String> workKeys = new ArrayList<>();
+        final String name;
+        final List<String> existingKeys;
+        final List<String> absentKeys;
+        
+        TestPutIfAbsent(String name, Object map, List<String> existingKeys, List<String> absentKeys) {
+            this.existingKeys = Collections.unmodifiableList(existingKeys);
+            this.absentKeys = Collections.unmodifiableList(absentKeys);
+            m = map;
+            this.name = name;
+        }
+       
+        @Override
+        public void prepare() {
+            workKeys.clear();
+            if (m instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> mm = (Map<String, Integer>) m;
+                mm.clear();
+                for (String k : existingKeys) {
+                    mm.put(k, 1);
+                    workKeys.add(new String(k.toCharArray()));
+                }
+            }
+            if (m instanceof CharTrie) {
+                @SuppressWarnings("unchecked")
+                CharTrie<Integer> mm = (CharTrie<Integer>) m;
+                mm.clear();
+                for (String k : existingKeys) {
+                    mm.put(k, 1);
+                    workKeys.add(new String(k.toCharArray()));
+                }
+            }
+            for (String k : absentKeys)
+                workKeys.add(new String(k.toCharArray()));
+            Collections.shuffle(workKeys);
+        }        
+        
+        @Override
+        public void run() {            
+            if (m instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> mm = (Map<String, Integer>) m;
+                for (String k : workKeys) 
+                    mm.putIfAbsent(k, 1);
+            }       
+            if (m instanceof CharTrie) {
+                @SuppressWarnings("unchecked")
+                CharTrie<Integer> mm = (CharTrie<Integer>) m;
+                for (String k : workKeys) 
+                    mm.putIfAbsent(k, 1);
+            }
+        }
+        
+        @Override
+        public void displayTime(long millis) {
+            System.out.format("%s %s `putIfAbsent()`s took %s ms.\n", name, workKeys.size(), millis);
+        }        
+    }
+    
+    
+    
+    static class TestPut implements Task {
+        
+        final Object m;
+        final List<String> workKeys = new ArrayList<>();
+        final String name;
+        final List<String> keys;
+        int c;
+        
+        TestPut(String name, Object map, List<String> keys) {
+            this.keys = Collections.unmodifiableList(keys);
+            m = map;
+            this.name = name;
+        }
+       
+        @Override
+        public void prepare() {
+            workKeys.clear();
+            if (m instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> mm = (Map<String, Integer>) m;
+                mm.clear();
+            }
+            if (m instanceof CharTrie) {
+                @SuppressWarnings("unchecked")
+                CharTrie<Integer> mm = (CharTrie<Integer>) m;
+                mm.clear();
+            }
+            for (String k : keys) {
+                workKeys.add(new String(k.toCharArray()));  // 2 copies
+                workKeys.add(new String(k.toCharArray())); 
+            }
+            Collections.shuffle(workKeys);
+            c = 0;
+        }        
+        
+        @Override
+        public void run() {            
+            if (m instanceof java.util.Map) {
+                @SuppressWarnings("unchecked")
+                Map<String, Integer> mm = (Map<String, Integer>) m;
+                for (String k : workKeys) 
+                    mm.put(k, c++);
+            }       
+            if (m instanceof CharTrie) {
+                @SuppressWarnings("unchecked")
+                CharTrie<Integer> mm = (CharTrie<Integer>) m;
+                for (String k : workKeys) 
+                    mm.put(k, c++);
+            }
+        }
+        
+        @Override
+        public void displayTime(long millis) {
+            System.out.format("%s %s `put()`s took %s ms.\n", name, workKeys.size(), millis);
         }        
     }
     
