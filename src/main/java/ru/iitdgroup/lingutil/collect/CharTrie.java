@@ -90,7 +90,7 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
                              BiFunction<? super V, ? super V, ? extends V> resolver) {
         requireNonNull(v);
         // search existing prefix for key
-        Prefix<V> pf = findLongestPrefix(root, s, 0);
+        Prefix<V> pf = findLongestPrefix(root, s);
         Node<V> n = pf.ending;
         int     p = pf.p;
         // prefix covers the key?
@@ -126,7 +126,7 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
      * Returns the value associated with the key
      */
     public V get(CharSequence s) {
-        Prefix<V> pf = findLongestPrefix(root, s, 0);
+        Prefix<V> pf = findLongestPrefix(root, s);
         return pf.p == s.length() ? pf.ending.value : null;
     }
     
@@ -171,8 +171,16 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
     
     
     public CharTrie<V> remove(CharSequence s) {
-        // TODO: implement
-        throw new UnsupportedOperationException();
+        Prefix<V> pf = findNodeToDetachFrom(root, s);
+        if (pf == null)
+            return this;
+        Node<V> n = pf.ending;
+        if (pf.p == s.length())
+            n.value = null;
+        else
+            n.next = n.next.remove(s.charAt(pf.p));
+        size--;
+        return this;
     }
     
     
@@ -198,16 +206,41 @@ public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
     }
     
     
-    static <V> Prefix<V> findLongestPrefix(Node<V> n, CharSequence s, int from) {
+    static <V> Prefix<V> findLongestPrefix(Node<V> n, CharSequence s) {
         int len = s.length();
         Node<V> nn;
-        int p = from;        
+        int p = 0;        
         while (p < len && n.next != null 
                && (nn = n.next.get(s.charAt(p))) != null) {
             n = nn;
             p++;
         }
         return new Prefix<>(n, p);
+    }
+    
+    
+    static <V> Prefix<V> findNodeToDetachFrom(Node<V> n, CharSequence s) {
+        int len = s.length();
+        Node<V> b = n;        // last found "branching" node
+        int bp = 0;           // and its position
+        Node<V> nn;
+        int p = 0;        
+        while (p < len && n.next != null) {           
+            if (n.value != null || n.next.size() > 1) {
+                b = n;
+                bp = p;
+            }
+            if ((nn = n.next.get(s.charAt(p))) == null)
+                break;
+            n = nn;
+            p++;
+        }
+        // does key exist ?
+        if (p != len || n.value == null)
+            return null;
+        // is last node a leaf ?
+        return n.next == null ? new Prefix<>(b, bp) 
+                       : new Prefix<>(n, p);
     }
     
     
