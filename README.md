@@ -27,6 +27,8 @@ them, and finally apply modifications to source, leaving markup
 untouched. (For example, you need to search and highlight 
 dictionary entries in html document.)
 
+-
+
 #####`search`
 
 - [`FoneticSearch`](src/main/java/ru/iitdgroup/lingutil/search/FoneticSearch.java) 
@@ -41,10 +43,12 @@ encoded differently than original;
 — search for matches using *gapped longest common
 subsequence*.
 
+-
+
 #####`collect`
 [*in progress, subject to change*] — char- and CharSequence-based collections,
 incliding [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) and [`CharTrie<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrie.java).
 
--
+---
 
 A few small demos to see how it works: [src/main/java/demos](src/main/java/demos) 
