@@ -4,7 +4,7 @@ Text search utils, fuzzy search algorithms etc.
 
 Main packages and classes:
 
-#####`text`
+####`text`
 
 - [`Word`](src/main/java/ru/iitdgroup/lingutil/text/Word.java) 
 — representation of a piece of text as some string 
@@ -27,9 +27,7 @@ them, and finally apply modifications to source, leaving markup
 untouched. (For example, you need to search and highlight 
 dictionary entries in html document.)
 
--
-
-#####`search`
+####`search`
 
 - [`FoneticSearch`](src/main/java/ru/iitdgroup/lingutil/search/FoneticSearch.java) 
 — original algorithm to search
@@ -43,12 +41,10 @@ encoded differently than original;
 — search for matches using *gapped longest common
 subsequence*.
 
--
-
-#####`collect`
+####`collect`
 [*in progress, subject to change*] — char- and CharSequence-based collections,
 incliding [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) and [`CharTrie<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrie.java).
 
----
+-
 
 A few small demos to see how it works: [src/main/java/demos](src/main/java/demos) 
