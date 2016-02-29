@@ -8,10 +8,10 @@ import java.util.BitSet;
 import java.util.Collections;
 import java.util.List;
 
-import ru.iitdgroup.lingutil.match.ScoredMatch;
-import ru.iitdgroup.lingutil.collect.LetterMap;
+import ru.iitdgroup.lingutil.collect.CharMap;
 import ru.iitdgroup.lingutil.collect.LetterSet;
-import ru.iitdgroup.lingutil.collect.LetterTable;
+import ru.iitdgroup.lingutil.collect.CharTable;
+import ru.iitdgroup.lingutil.match.ScoredMatch;
 
 
 /**
@@ -46,8 +46,8 @@ public class FoneticSearch {
     double gapCost     = 1.0;
     double replaceCost = 2.0;
     
-    final static LetterMap<LetterSet> SUBS 
-        = new LetterMap<LetterSet>()
+    final static CharMap<LetterSet> SUBS 
+        = CharMap.<LetterSet>create()
               .put('A', of('O'))
               .put('B', of('P'))
               .put('C', of("KQ"))
@@ -78,8 +78,8 @@ public class FoneticSearch {
               .put('9', of('G'))
               .makeImmutable();
     
-    final static LetterTable<LetterSet> DIGRAPHS 
-        = new LetterTable<LetterSet>()
+    final static CharTable<LetterSet> DIGRAPHS 
+        = new CharTable<LetterSet>()
               .put("CH", of("C4"))
               .put("CK", of("KC"))
               .put("EA", of('I'))

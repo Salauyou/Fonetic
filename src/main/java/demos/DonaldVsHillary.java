@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import ru.iitdgroup.lingutil.collect.LetterTrie;
+import ru.iitdgroup.lingutil.collect.CharTrieSet;
 import ru.iitdgroup.lingutil.text.Word;
 import ru.iitdgroup.lingutil.text.Words;
 
@@ -23,8 +23,8 @@ public class DonaldVsHillary {
     static final String SPAN_DEMOCRATIC = "<span style=\"background: #08f; color: #fff\">%s</span>";
     static final String SPAN_REPUBLICAN = "<span style=\"background: #f00; color: #fff\">%s</span>";
     
-    static final LetterTrie hillary = new LetterTrie().add("HILLARY").add("CLINTON");
-    static final LetterTrie donald  = new LetterTrie().add("DONALD").add("TRUMP");
+    static final CharTrieSet hillary = new CharTrieSet().add("HILLARY").add("CLINTON");    
+    static final CharTrieSet donald  = new CharTrieSet().add("DONALD").add("TRUMP");
     
     
     /**
@@ -32,8 +32,8 @@ public class DonaldVsHillary {
      * except names of 2016 candidates
      */
     static String hillarize(String html) {
-
-        // headline counters
+        
+        // occurrence counters
         AtomicInteger h = new AtomicInteger(0);
         AtomicInteger d = new AtomicInteger(0);
                 
@@ -63,7 +63,7 @@ public class DonaldVsHillary {
                 })
                 .collect(Collectors.toList());     
 
-        System.out.format("Seems that %s gonna win: %s Hillary headlines vs %s Donald's\n", 
+        System.out.format("Seems that %s gonna win: %s Hillary occurrences vs %s Donald's\n", 
                            h.get() > d.get() ? "Clinton" : "Trump", 
                            h.get(), d.get());
         
