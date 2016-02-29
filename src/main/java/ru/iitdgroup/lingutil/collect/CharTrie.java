@@ -22,6 +22,9 @@ import ru.iitdgroup.lingutil.collect.CharMapImpl.SingleCharMap;
  * nodes, which is useful in searching algorithms that perform 
  * char-by-char matching over large set of short char sequences
  * 
+ * @deprecated To be soon replaced by better implementation, 
+ * fully supporting `Map&lt;CharSequence, V&gt;` and `TrieCursor&lt;V&gt;`
+ * 
  * @author Salauyou
  */
 public class CharTrie<V> implements Iterable<Entry<CharSequence, V>> {
