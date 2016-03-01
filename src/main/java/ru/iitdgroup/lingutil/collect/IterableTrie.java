@@ -14,7 +14,8 @@ public interface IterableTrie<V> {
     
     
     /**
-     * Cursor to provide char-by-char traversal of <tt>IterableTrie</tt>.
+     * Cursor to perform char-by-char traversal over nodes 
+     * of <tt>IterableTrie</tt>.
      * <p>
      * Here is an example showing how <tt>TrieCursor</tt> can be
      * applied to effective lookup of dictionary keys in a string:

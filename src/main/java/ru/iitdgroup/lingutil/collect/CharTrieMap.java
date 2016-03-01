@@ -11,15 +11,54 @@ import java.util.function.BiFunction;
 
 import ru.iitdgroup.lingutil.collect.CharMapImpl.SingleCharMap;
 
+
+/**
+ * Map based on compressed char trie.
+ * <p>
+ * The main goal of implementation is to provide iterator-like
+ * <tt>TrieCursor</tt> for char-by-char traversal over trie nodes. 
+ * This is useful in searching algorithms that perform 
+ * matching over large set of short char sequences.
+ * 
+ * @see {@link IterableTrie.TrieCursor}
+ *
+ * @author Salauyou
+ */
 public class CharTrieMap<V> extends AbstractMap<CharSequence, V> 
                             implements IterableTrie<V> {
     
+    /*
+     * This map is designed specially for text searching algorithms 
+     * performing char-by-char matching over large set of short strings. 
+     * To serve this purpose, it provides access to iterator-like 
+     * `TrieCursor`.
+     * 
+     * For short keys, memory consumption is relatively similar to 
+     * other popular `String`-keyed maps. This implementation
+     * has much more nodes than, for example, `HashMap`, but 
+     * at other hand doesn't require to store keys themselves.
+     *
+     * Below is `CharTrieMap` performance comparison against popular 
+     * map implementations, including Apache Commons `PatriciaTrie`. 
+     * For tests, 200K random 3...11-char `String` keys were taken, 
+     * equal amount of existing and non-existing keys. Before each 
+     * test, all keys are recreated to clear cached hash values.
+     *     
+     * As compared to: | HashMap       | TreeMap       | PatriciaTrie     
+     * ----------------+------------ --+---------------+---------------
+     *           get() | ~1.3x slower  | ~2.2x faster  | ~1.5x faster
+     *   containsKey() | ~1.3x slower  | ~2.2x faster  | ~1.5x faster
+     *           put() | ~1.7x slower  | ~2.2x faster  | ~1.5x faster
+     *        remove() |
+     *   putIfAbsent() | ~1.7x slower  | ~2.3x faster  | ~1.8x faster
+     * entry traversal |
+     *   
+     */
+    
+    
     int size = 0;
     
-    V rootValue = null;
-    @SuppressWarnings("unchecked")
-    CharMap<Node<V>> root = CharMapImpl.MUTABLE_EMPTY;
-    
+    final Node<V> root = new Node<>(null, "\u0000", 0);
     
     @Override
     public int size() {
@@ -29,13 +68,7 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
 
     @Override
     public boolean containsKey(Object key) {
-        if (!(key instanceof CharSequence))
-            return false;
-        CharSequence s = (CharSequence) key;
-        if (s.length() == 0)
-            return rootValue != null;
-        Prefix<V> p = findCommonPrefix(root, s);
-        return p != null && p.length == s.length();
+        return get(key) != null;
     }
     
     
@@ -44,13 +77,13 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
         if (!(key instanceof CharSequence))
             return null;
         CharSequence s = (CharSequence) key;
-        if (s.length() == 0)
-            return rootValue;
-        
-        // TODO: optimize (traverse from root, 
-        // failing fast if edge length > remainder part)
+      
+        // TODO: optimize - traverse without node tracking, 
+        // fail fast if at some point (edge length > remainder part)
         Prefix<V> p = findCommonPrefix(root, s);
-        return p != null && p.length == s.length() ? p.ending.value : null;
+        return (p != null && p.length == s.length() && p.cutting == 0) 
+               ? p.ending.value 
+               : null;
     }
     
     
@@ -61,24 +94,16 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
         Objects.requireNonNull(value);
         CharSequence s = (CharSequence) key;
         int len = s.length();
-        
-        // Special case for empty key
-        if (len == 0) {
-            V old = rootValue;
-            V nv = resolver.apply(old, value);
-            rootValue = nv == null ? old : nv;
-            return old;
-        }
 
         Prefix<V> p = findCommonPrefix(root, s);  
         Node<V> n = p.ending;
-        // prefix is full - replace existing value 
-        // or append a leaf
+        // prefix is full - modify existing node
         if (p.cutting == 0) {
-            // 1. Replace existing value
+            // replace existing value
             if (p.length == len) {
                 if (n.value == null) {
                     n.value = value;
+                    size++;
                     return null;
                 } else {
                     V old = n.value;
@@ -87,67 +112,64 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
                     return old;
                 }
             }
-            // 2. Attach a leaf
+            // attach a leaf
             Node<V> nn = new Node<>(value, s, p.length);
             char c = s.charAt(p.length);
-            if (n == null) 
-                root = root.put(c, nn);
-            else if (n.next == null) 
-                n.next = new SingleCharMap<>(c, nn);
-            else
-                n.next = n.next.put(c, nn);
+            n.next = n.next == null 
+                   ? new SingleCharMap<>(c, nn)
+                   : n.next.put(c, nn);
+            size++;
             return null;
         }
         
-        // need to split existing node
+        // prefix not full - split existing node
         Node<V> sn = n.split(p.cutting);
+        // set value at split point
         if (p.length == len) {
             sn.value = value;
         } else {
+            // attach a leaf
             Node<V> nn = new Node<>(value, s, p.length);
-            sn.next = new SingleCharMap<>(s.charAt(p.length), nn);
+            sn.next = sn.next == null 
+                    ? new SingleCharMap<>(s.charAt(p.length), nn)
+                    : sn.next.put(s.charAt(p.length), nn);
         }
-        if (p.pred == null) { 
-            root = root.put(p.key, sn);
-        } else {
-            p.pred.next = p.pred.next == null 
-                   ? new SingleCharMap<>(p.key, sn) 
-                   : p.pred.next.put(p.key, sn);
-        }
+        // reassign mapping
+        p.pred.next.put(p.key, sn);
+        size++;
         return null;
     }
     
     
     
-    static <V> Prefix<V> findCommonPrefix(final CharMap<Node<V>> root, 
+    static <V> Prefix<V> findCommonPrefix(final Node<V> root, 
                                           final CharSequence s) {
-        CharMap<Node<V>> holder = root;
         Node<V> pred = null;
-        Node<V> current = null;
-        char keyChar = s.charAt(0);
+        Node<V> current = root;
+        char keyChar = '\u0000';
         int len = s.length();
         int pos = 0;
+        CharMap<Node<V>> holder = root.next;
         for(;;) {
-            Node<V> n = holder == null ? null : holder.get(keyChar);
+            if (pos == len)
+                return new Prefix<>(pred, keyChar, current, pos, 0);
+            keyChar = s.charAt(pos);
+            Node<V> n = holder == null 
+                      ? null 
+                      : holder.get(keyChar);
             if (n == null)
                 return new Prefix<>(pred, keyChar, current, pos, 0);
             pred = current;
             current = n;
+            pos++;
             // edge is more than 1 char
             if (n.edge != null) {                
-                int p = 1;
-                pos++;
-                while (p < n.edge.length) {
-                    if (pos == len || n.edge[p++] != s.charAt(pos++))
-                        return new Prefix<>(pred, keyChar, current, pos - 1, p - 1);
+                for (int p = 1; p < n.edge.length; p++, pos++) {
+                    if (pos == len || n.edge[p] != s.charAt(pos))
+                        return new Prefix<>(pred, keyChar, current, pos, p);
                 }
-            } else {
-                pos++;
-            }
-            if (pos == len)
-                return new Prefix<>(pred, keyChar, current, pos, 0);
+            }            
             holder = current.next;
-            keyChar = s.charAt(pos);
         }
     }
     
@@ -193,8 +215,9 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
     @Override
     public void clear() {
-        // TODO: implement
-        throw new UnsupportedOperationException();
+        root.next = null;
+        root.value = null;
+        size = 0;
     }
     
     
@@ -249,16 +272,18 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
         }
         
         Node<V> split(int pos) {
-            Node<V> right = new Node<>(value, edge, 0, pos);
-            Node<V> left = new Node<>(null, edge, pos, edge.length);
+            Node<V> left = new Node<>(null, edge, 0, pos);
+            Node<V> right = new Node<>(value, edge, pos, edge.length);
             left.next = new SingleCharMap<>(edge[pos], right);
+            right.next = this.next;
             return left;
         }
         
         @Override
         public String toString() {
-            return (edge == null ? "[]" : new StringBuilder().append('[').append(edge, 0, edge.length).append(']')) 
-                    + ": " + String.valueOf(value);
+            return String.format("[%s: %s]", 
+                    edge == null ? "" : new StringBuilder().append(edge, 0, edge.length), 
+                    value);
         }
     }
     

@@ -117,6 +117,24 @@ public abstract class CharMap<V> implements Iterable<CharEntry<V>> {
                   Spliterators.spliterator(entries(), size(), 0), false);
     }
     
+    
+    @Override
+    public String toString() {
+        Iterator<CharEntry<V>> i = iterator();
+        if (!i.hasNext())
+            return "{}";
+        StringBuilder sb = new StringBuilder().append('{');
+        for(;;) {
+            CharEntry<V> e = i.next();
+            sb.append(e.getChar())
+               .append('=')
+               .append(e.getValue());
+            if (!i.hasNext())
+                return sb.append('}').toString();
+            sb.append(", ");
+        }
+    }
+    
    
     // child classes should call it before modifications
     void checkMutability() {
