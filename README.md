@@ -43,7 +43,7 @@ subsequence*.
 
 ####`collect`
 [*in progress, subject to change*] — char- and CharSequence-based collections,
-incliding [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) and [`CharTrie<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrie.java).
+incliding [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) and [`CharTrieMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrieMap.java).
 
 -
 
