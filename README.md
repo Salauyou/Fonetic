@@ -45,7 +45,7 @@ subsequence*.
 [*in progress, subject to change*] — collections to help in search algorithms,
 incliding:
 - [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) — 
-simple char-keyed map;
+fast and simple char-keyed map;
 - [`CharTrieMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrieMap.java) —
 implementation of `Map<CharSequence, V>` based on compressed trie.
 
