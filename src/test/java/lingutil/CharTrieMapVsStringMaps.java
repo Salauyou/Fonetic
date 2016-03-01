@@ -21,8 +21,8 @@ public class CharTrieMapVsStringMaps {
 
     Map<String, Integer> hashmap;
     Map<String, Integer> treemap;
-    PatriciaTrie<Integer> ptmap;
-    CharTrieMap<Integer> triemap;   
+    Map<String, Integer> ptmap;
+    Map<CharSequence, Integer> triemap;   
 
     List<String> existingKeys = new ArrayList<>();
     List<String> absentKeys = new ArrayList<>();
