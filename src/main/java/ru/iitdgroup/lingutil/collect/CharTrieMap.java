@@ -80,26 +80,26 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
       
         // TODO: optimize - traverse without node tracking, 
         // fail fast if at some point (edge length > remainder part)
-        Prefix<V> p = findCommonPrefix(root, s);
+        Prefix<V> p = findPrefix(root, s);
         return (p != null && p.length == s.length() && p.cutting == 0) 
-               ? p.ending.value 
-               : null;
+                  ? p.ending.value 
+                  : null;
     }
     
     
     @Override
-    public V merge(CharSequence key, V value,
+    public V merge(CharSequence s, V value,
                    BiFunction<? super V, ? super V, ? extends V> resolver) {
         
         Objects.requireNonNull(value);
-        CharSequence s = (CharSequence) key;
         int len = s.length();
 
-        Prefix<V> p = findCommonPrefix(root, s);  
+        Prefix<V> p = findPrefix(root, s);  
         Node<V> n = p.ending;
+        
         // prefix is full - modify existing node
         if (p.cutting == 0) {
-            // replace existing value
+            // replace existing value...
             if (p.length == len) {
                 if (n.value == null) {
                     n.value = value;
@@ -112,38 +112,35 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
                     return old;
                 }
             }
-            // attach a leaf
-            Node<V> nn = new Node<>(value, s, p.length);
-            char c = s.charAt(p.length);
-            n.next = n.next == null 
-                   ? new SingleCharMap<>(c, nn)
-                   : n.next.put(c, nn);
+            // ...or attach a leaf
+            attachLeaf(p.ending, value, s, p.length);
             size++;
             return null;
         }
         
-        // prefix not full - split existing node
-        Node<V> sn = n.split(p.cutting);
-        // set value at split point
-        if (p.length == len) {
-            sn.value = value;
-        } else {
-            // attach a leaf
-            Node<V> nn = new Node<>(value, s, p.length);
-            sn.next = sn.next == null 
-                    ? new SingleCharMap<>(s.charAt(p.length), nn)
-                    : sn.next.put(s.charAt(p.length), nn);
-        }
-        // reassign mapping
-        p.pred.next.put(p.key, sn);
+        // prefix not full - split ending node
+        n = n.split(p.cutting);
+        if (p.length == len) 
+            n.value = value; 
+        else            
+            attachLeaf(n, value, s, p.length);
+        p.pred.next.put(p.key, n);
         size++;
         return null;
     }
     
     
     
-    static <V> Prefix<V> findCommonPrefix(final Node<V> root, 
-                                          final CharSequence s) {
+    static <V> void attachLeaf(Node<V> node, V value, CharSequence s, int from) {
+        Node<V> next = new Node<>(value, s, from);
+        node.next = node.next == null 
+                  ? new SingleCharMap<>(s.charAt(from), next)
+                  : node.next.put(s.charAt(from), next);
+    }
+    
+    
+    
+    static <V> Prefix<V> findPrefix(final Node<V> root, final CharSequence s) {
         Node<V> pred = null;
         Node<V> current = root;
         char keyChar = '\u0000';
@@ -154,9 +151,7 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
             if (pos == len)
                 return new Prefix<>(pred, keyChar, current, pos, 0);
             keyChar = s.charAt(pos);
-            Node<V> n = holder == null 
-                      ? null 
-                      : holder.get(keyChar);
+            Node<V> n = holder == null ? null : holder.get(keyChar);
             if (n == null)
                 return new Prefix<>(pred, keyChar, current, pos, 0);
             pred = current;
@@ -175,6 +170,7 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
     
     static final class Prefix<V> {
+        
         final int length;      // length of common prefix
         final Node<V> ending;  // ending node
         final int cutting;     // position of split of ending node
