@@ -42,7 +42,7 @@ encoded differently than original;
 subsequence*.
 
 ####`collect`
-[*in progress, subject to change*] — char- and CharSequence-based collections,
+[*in progress, subject to change*] — collections to help in search algorithms,
 incliding:
 - [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) — 
 simple char-keyed map;
