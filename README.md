@@ -42,8 +42,13 @@ encoded differently than original;
 subsequence*.
 
 ####`collect`
-[*in progress, subject to change*] — char- and CharSequence-based collections,
-incliding [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) and [`CharTrie<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrie.java).
+[*in progress, subject to change*] — collections to help in search algorithms,
+incliding:
+- [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) — 
+fast and simple char-keyed map;
+
+- [`CharTrieMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrieMap.java) —
+implementation of `Map<CharSequence, V>` based on compressed trie.
 
 -
 

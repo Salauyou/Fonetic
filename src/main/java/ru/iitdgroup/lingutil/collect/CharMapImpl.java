@@ -47,7 +47,7 @@ class CharMapImpl {
             Cme<V> e = table[bitFor(c)];
             while (e != null && e.c != c)
                 e = e.next;
-            return e == null ? null : e.v;
+            return e == null ? null : e.value;
         }
 
         
@@ -73,7 +73,7 @@ class CharMapImpl {
             while (e.c != c && e.next != null) 
                 e = e.next;
             if (e.c == c)
-                e.v = value;
+                e.value = value;
             else {
                 e.next = new Cme<>(this, c, value);
                 size++;
@@ -96,7 +96,7 @@ class CharMapImpl {
             while (e.c != c && e.next != null) 
                 e = e.next;
             if (e.c == c)
-                e.v = Objects.requireNonNull(resolver.apply(e.v, value));
+                e.value = Objects.requireNonNull(resolver.apply(e.value, value));
             else {
                 e.next = new Cme<>(this, c, value);
                 size++;
@@ -207,23 +207,23 @@ class CharMapImpl {
                                        Comparable<Cme<V>> {
             Cme<V> next = null;
             final char c;
-            final CharMap<V> m;
-            V v;
+            final CharMap<V> parent;
+            V value;
 
             Cme(CharMap<V> m, char c, V value) {
                 this.c = c;
-                this.v = value;
-                this.m = m;
+                this.value = value;
+                this.parent = m;
             }
            
             @Override public Character getKey()   { return c; }
-            @Override public V         getValue() { return v; }
+            @Override public V         getValue() { return value; }
 
             @Override public V setValue(V value) {
-                m.checkMutability();
+                parent.checkMutability();
                 Objects.requireNonNull(value);
-                V old = v;
-                v = value;
+                V old = this.value;
+                this.value = value;
                 return old;
             }
             
