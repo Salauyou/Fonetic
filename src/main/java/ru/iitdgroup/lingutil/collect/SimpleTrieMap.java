@@ -13,19 +13,18 @@ import ru.iitdgroup.lingutil.collect.CharMapImpl.SingleCharMap;
 
 
 /**
- * Map based on compressed char trie.
+ * <tt>TrieMap&lt;V&gt;</tt> implementation based on compressed char trie.
  * <p>
- * The main goal of implementation is to provide iterator-like
- * <tt>TrieCursor</tt> for char-by-char traversal over trie nodes. 
- * This is useful in searching algorithms that perform 
- * matching over large set of short char sequences.
+ * This map does not allow null values in order not change behavior
+ * when implementation will be switched to concurrent version in future.
  * 
- * @see {@link IterableTrie.TrieCursor}
+ * @see {@link TrieMap}
+ * @see {@link TrieMap.TrieCursor}
  *
  * @author Salauyou
  */
-public class CharTrieMap<V> extends AbstractMap<CharSequence, V> 
-                            implements IterableTrie<V> {
+public class SimpleTrieMap<V> extends AbstractMap<String, V> 
+                              implements TrieMap<V> {
     
     /*
      * This map is designed specially for text searching algorithms 
@@ -38,7 +37,7 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
      * has much more nodes than, for example, `HashMap`, but 
      * at other hand doesn't require to store keys themselves.
      *
-     * Below is `CharTrieMap` performance comparison against popular 
+     * Below is `SimpleTrieMap` performance comparison against popular 
      * map implementations, including Apache Commons `PatriciaTrie`. 
      * For tests, 200K random 3...11-char `String` keys were taken, 
      * equal amount of existing and non-existing keys. Before each 
@@ -53,6 +52,9 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
      *   putIfAbsent() | ~1.7x slower  | ~2.3x faster  | ~1.8x faster
      * entry traversal |
      *   
+     * For keys of length ~50 performance degrades at about 1.5x, but 
+     * still remains the best comparing to `TreeMap` and `PatriciaTrie`. 
+     *  
      */
     
     
@@ -88,7 +90,7 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
     
     @Override
-    public V merge(CharSequence s, V value,
+    public V merge(String s, V value,
                    BiFunction<? super V, ? super V, ? extends V> resolver) {
         
         Objects.requireNonNull(value);
@@ -189,14 +191,14 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
     
     @Override
-    public V put(CharSequence key, V value) {
+    public V put(String key, V value) {
         Objects.requireNonNull(value);
         return merge(key, value, (v1, v2) -> v2);
     }
     
     
     @Override
-    public V putIfAbsent(CharSequence key, V value) {
+    public V putIfAbsent(String key, V value) {
         Objects.requireNonNull(value);
         return merge(key, value, (v1, v2) -> v1);
     }
@@ -227,18 +229,18 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
     
     @Override
-    public Set<Entry<CharSequence, V>> entrySet() {
+    public Set<Entry<String, V>> entrySet() {
         // TODO: optimize
-        return new AbstractSet<Entry<CharSequence, V>>() {
+        return new AbstractSet<Entry<String, V>>() {
             
             @Override
-            public Iterator<Entry<CharSequence, V>> iterator() {
+            public Iterator<Entry<String, V>> iterator() {
                 return new Itr();
             }
 
             @Override
             public int size() {
-                return CharTrieMap.this.size;
+                return SimpleTrieMap.this.size;
             }
         };
     }
@@ -285,9 +287,9 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
     
     
-    final class Itr implements Iterator<Entry<CharSequence, V>> {
+    final class Itr implements Iterator<Entry<String, V>> {
         
-        Entry<CharSequence, V> next = null;
+        Entry<String, V> next = null;
         final TrieCursor<V> cur = getCursor();
         boolean finished = false;
         boolean rootExplored = false;        
@@ -305,16 +307,16 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
         }
 
         @Override
-        public Entry<CharSequence, V> next() {
+        public Entry<String, V> next() {
             if (!hasNext())
                 throw new NoSuchElementException();
-            Entry<CharSequence, V> e = next;
+            Entry<String, V> e = next;
             next = null;
             return e;
         }
         
         
-        Entry<CharSequence, V> nextFromCursor() {
+        Entry<String, V> nextFromCursor() {
             // perform DFS from current cursor position 
             for(;;) {
                 // try to continue prefix
@@ -349,9 +351,9 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
     
 
 
-    final static class ItrEntry<V> implements Entry<CharSequence, V> {
+    final static class ItrEntry<V> implements Entry<String, V> {
 
-        final CharSequence s;
+        final String s;
         final V v;
         
         ItrEntry(TrieCursor<V> cur) {
@@ -359,13 +361,13 @@ public class CharTrieMap<V> extends AbstractMap<CharSequence, V>
             v = cur.getValue();
         }
         
-        ItrEntry(CharSequence key, V value) {
+        ItrEntry(String key, V value) {
             s = key;
             v = value;
         }
         
         @Override
-        public CharSequence getKey() {
+        public String getKey() {
             return s;
         }
 

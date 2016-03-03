@@ -1,10 +1,34 @@
 package ru.iitdgroup.lingutil.collect;
 
+import java.util.Map;
 import java.util.NoSuchElementException;
 
 
-
-public interface IterableTrie<V> {
+/**
+ * The main goal of this interface is to provide iterator-like 
+ * <tt>TrieCursor</tt> for char-by-char traversal over trie nodes. This 
+ * is useful in searching algorithms that perform matching over large 
+ * set of short patterns.
+ * <p>
+ * At other hand, by extending <tt>Map&lt;String, V&gt;</tt> it allows to
+ * operate data stored in tries in a very common way.
+ * <p>
+ * Although <tt>CharSequence</tt> might be conceptually more correct
+ * candidate for key type since any trie is built upon sequences, not solid 
+ * objects, <tt>String</tt> is much better choice because of immutability, 
+ * consistency and completly predicted behavior. More than that, it allows 
+ * to compare view sets and perform bulk operations mutually with other
+ * maps where keys are <tt>String</tt>, which in practice occurs
+ * more often than any other type.
+ * 
+ * 
+ * @see {@link TrieMap.TrieCursor}
+ *
+ * @param <V> value type
+ * 
+ * @author Salauyou
+ */
+public interface TrieMap<V> extends Map<String, V> {
 
     
     /**
@@ -14,8 +38,7 @@ public interface IterableTrie<V> {
     
     
     /**
-     * Cursor to perform char-by-char traversal over nodes 
-     * of <tt>IterableTrie</tt>.
+     * Cursor to perform char-by-char traversal over <tt>TrieMap</tt>.
      * <p>
      * Here is an example showing how <tt>TrieCursor</tt> can be
      * applied to effective lookup of dictionary keys in a string:
@@ -33,19 +56,20 @@ public interface IterableTrie<V> {
      *     while (pos < text.length() && cursor.hasNext(c = text.charAt(pos++))) {
      *         cursor.next(c);
      *         if (cursor.hasValue()) {
-     *             CharSequence match = cursor.currentPrefix();
-     *             V            value = cursor.getValue();
+     *             String match = cursor.currentPrefix();
+     *             V      value = cursor.getValue();
      *             //... consume match and value
      *         }
      *     }
      * }</pre></blockquote>
      *
      * @author Salauyou
+     * 
      */
     public static interface TrieCursor<V> {
         
         /**
-         * Can current prefix be continued by some char?
+         * Can current prefix be continued with some char?
          */
         boolean hasNext();
         
@@ -89,25 +113,25 @@ public interface IterableTrie<V> {
         boolean hasMore(char c);
         
         /**
-         * Pick another char that can replace the ending char of current
-         * prefix and apply replacement.
+         * Picks another char that can replace the ending char of current
+         * prefix and applies replacement.
          * <p>
          * To be used in conjunction with {@link TrieCursor#hasMore()}
          * to iterate over prefix ending alternatives
          * @throws NoSuchElementException if there is no alternative
-         *         char or they all are already traversed
+         *         char or they are already all traversed
          */
         char more() throws NoSuchElementException;
         
         /**
-         * Replace the ending char of current prefix by this char
+         * Replaces the ending char of current prefix by this char
          * @throws NoSuchElementException if such replacement cannot
          *         be applied (no such prefix exists)
          */
         char more(char c) throws NoSuchElementException;
         
         /**
-         * Move one step back reducing prefix by one char
+         * Moves one step back reducing prefix by one char
          * @throws NoSuchElementException if prefix is already empty
          */
         char back() throws NoSuchElementException;
@@ -120,7 +144,7 @@ public interface IterableTrie<V> {
         boolean hasValue();
         
         /**
-         * Return the value mapped to current prefix
+         * Returns the value mapped to current prefix
          */
         V getValue();
         
@@ -144,7 +168,7 @@ public interface IterableTrie<V> {
         /**
          * Returns current prefix
          */
-        CharSequence currentPrefix();
+        String currentPrefix();
     }
     
 }

@@ -1,6 +1,7 @@
 # Fonetic
 
-Text search utils, fuzzy search algorithms etc.
+Text search utils, fuzzy search algorithms and collections 
+to make their use easier.
 
 Main packages and classes:
 
@@ -33,13 +34,12 @@ dictionary entries in html document.)
 — original algorithm to search
 for phonetically similar occurrences of `pattern` in `text`. The
 main goal is to allow not only phonetic variations, but also 
-**non-phonetic misspells**, that commonly used *Metaphone* or *Soundex* 
+**non-phonetic misspells**, that commonly used *Metaphone* and *Soundex* 
 don't handle—misspelled word there are very likely to be 
 encoded differently than original;
 
 - [`LcsSearch`](src/main/java/ru/iitdgroup/lingutil/search/LcsSearch.java) 
-— search for matches using *gapped longest common
-subsequence*.
+— search for matches using *gapped longest common subsequence*.
 
 ####`collect`
 [*in progress, subject to change*] — collections to help in search algorithms,
@@ -47,8 +47,9 @@ incliding:
 - [`CharMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharMap.java) — 
 fast and simple char-keyed map;
 
-- [`CharTrieMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/CharTrieMap.java) —
-implementation of `Map<CharSequence, V>` based on compressed trie.
+- [`SimpleTrieMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/SimpleTrieMap.java) —
+implementation of `Map<String, V>` and [`TrieMap<V>`](src/main/java/ru/iitdgroup/lingutil/collect/TrieMap.java) 
+based on compressed trie.
 
 -
 
