@@ -1,6 +1,9 @@
 package lingutil;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 import java.util.Arrays;
 import java.util.List;
@@ -8,9 +11,9 @@ import java.util.Map;
 
 import org.junit.Test;
 
-import ru.iitdgroup.lingutil.collect.CharTrieMap;
+import ru.iitdgroup.lingutil.collect.SimpleTrieMap;
 
-public class TestCharTrieMap {
+public class TestSimpleTrieMap {
 
     @Test
     public void debug() {
@@ -19,7 +22,7 @@ public class TestCharTrieMap {
         List<String> splitPrefixed 
             = Arrays.asList("A", "APPLAUSE", "BEHI", "BURMISTER", "BURMA");
             
-        CharTrieMap<String> t = new CharTrieMap<>();
+        SimpleTrieMap<String> t = new SimpleTrieMap<>();
         for (String s : fullPrefixed)
             t.put(s, s);
         assertContainsAll(t, fullPrefixed);
@@ -33,17 +36,18 @@ public class TestCharTrieMap {
     }
     
     
-    static void assertContainsAll(Map<CharSequence, String> map, List<String> list) {
-        for (String s : list) {
-            assertTrue(map.containsKey(s));
-            assertEquals(s, map.get(s));
+    static void assertContainsAll(Map<?, ?> map, List<?> keys) {
+        for (Object k : keys) {
+            assertTrue(map.containsKey(k));
+            assertEquals(k, map.get(k));
         }
     }
     
-    static void assertContainsNone(Map<CharSequence, String> map, List<String> list) {
-        for (String s : list) {
-            assertFalse(map.containsKey(s));
-            assertNull(map.get(s));
+    
+    static void assertContainsNone(Map<?, ?> map, List<?> keys) {
+        for (Object k : keys) {
+            assertFalse(map.containsKey(k));
+            assertNull(map.get(k));
         }
     }
     

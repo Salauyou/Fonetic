@@ -13,16 +13,16 @@ import org.junit.Before;
 import org.junit.Test;
 
 import lingutil.TimeMeasurer.Task;
-import ru.iitdgroup.lingutil.collect.CharTrieMap;
+import ru.iitdgroup.lingutil.collect.SimpleTrieMap;
 
 
 
-public class CharTrieMapVsStringMaps {
+public class SimpleTrieMapVsStringMaps {
 
     Map<String, Integer> hashmap;
     Map<String, Integer> treemap;
     Map<String, Integer> ptmap;
-    Map<CharSequence, Integer> triemap;   
+    Map<String, Integer> triemap;   
 
     List<String> existingKeys = new ArrayList<>();
     List<String> absentKeys = new ArrayList<>();
@@ -32,7 +32,7 @@ public class CharTrieMapVsStringMaps {
         hashmap = new HashMap<>();
         treemap = new TreeMap<>();
         ptmap   = new PatriciaTrie<>();
-        triemap = new CharTrieMap<>(); 
+        triemap = new SimpleTrieMap<>(); 
         
         int n = 100_000;
         for (int i = 0; i < n; i++) {
@@ -81,7 +81,7 @@ public class CharTrieMapVsStringMaps {
     }
     
     
-    @Test
+//    @Test
     public void testPutIfAbsent() {
         TimeMeasurer.measureTime(5,                        
             new TestPutIfAbsent("java.util.HashMap", hashmap, existingKeys, absentKeys),
