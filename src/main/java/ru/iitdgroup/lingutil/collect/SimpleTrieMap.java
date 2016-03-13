@@ -2,13 +2,18 @@ package ru.iitdgroup.lingutil.collect;
 
 import java.util.AbstractMap;
 import java.util.AbstractSet;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Deque;
 import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.BiFunction;
 
+import ru.iitdgroup.lingutil.collect.CharMap.CharEntry;
 import ru.iitdgroup.lingutil.collect.CharMapImpl.SingleCharMap;
 
 
@@ -253,6 +258,24 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
     
     
     @Override
+    public V remove(Object key) {
+        // TODO: refactor to detach empty nodes
+        // and join split edges
+        if (!(key instanceof CharSequence))
+            return null;
+        Node<V> n = findNode(root, (CharSequence) key);
+        if (n == null)
+            return null;
+        V old = n.value;
+        if (old == null)
+            return null;
+        n.value = null;
+        size--;
+        return old;
+    }
+    
+    
+    @Override
     public void clear() {
         root.next = null;
         root.value = null;
@@ -260,11 +283,16 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
     }
     
     
-    
+    /**
+     * Returns trie cursor for this trie.
+     * <p>
+     * <i>Now, empty (removed) edges are also traversed, 
+     * but they has no value. This wrong behavior will 
+     * be corrected in next release</i>
+     */
     @Override
     public TrieCursor<V> getCursor() {
-        // TODO: implement
-        throw new UnsupportedOperationException();
+        return new Cursor();
     }
     
     
@@ -311,9 +339,9 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
         }
         
         Node<V> split(int pos) {
-            Node<V> left = new Node<>(null, edge, 0, pos);
+            Node<V> left  = new Node<>(null, edge, 0, pos);
             Node<V> right = new Node<>(value, edge, pos, edge.length);
-            left.next = new SingleCharMap<>(edge[pos], right);
+            left.next  = new SingleCharMap<>(edge[pos], right);
             right.next = this.next;
             return left;
         }
@@ -324,6 +352,161 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
                     edge == null ? "" : new StringBuilder().append(edge, 0, edge.length), 
                     value);
         }
+    }
+    
+    
+    
+    final class Cursor implements TrieCursor<V> {
+
+        int pos = -1;
+        int edgePos = 0;
+        final Deque<Iterator<CharEntry<Node<V>>>> its = new LinkedList<>(); // iterator stack
+        final Deque<CharEntry<Node<V>>> ces = new LinkedList<>();  // current items in corresponding iterators         
+        Node<V> cn = root;                                         // current node
+        
+        
+        boolean onEdge() {
+            return cn.edge != null && cn.edge.length - 1 > edgePos;
+        }
+        
+        
+        @Override
+        public boolean hasNext() {
+            if (onEdge()) 
+                return true;
+            return cn.next != null && cn.next.size() > 0;    
+        }
+
+        @Override
+        public boolean hasNext(char c) {
+            if (onEdge())
+                return cn.edge[edgePos + 1] == c;                
+            return cn.next != null && cn.next.containsKey(c);
+        }
+
+        @Override
+        public char next() throws NoSuchElementException {
+            if (!hasNext())
+                throw new NoSuchElementException();
+            if (onEdge()) {
+                pos++;
+                edgePos++;
+                return cn.edge[edgePos];
+            }
+            pos++;
+            edgePos = 0;
+            Iterator<CharEntry<Node<V>>> i = cn.next.iterator();
+            CharEntry<Node<V>> e = i.next();
+            its.push(i);
+            ces.push(e);
+            cn = e.getValue();
+            return ces.peek().getChar();
+        }
+
+        @Override
+        public char next(char c) throws NoSuchElementException {
+            if (!hasNext(c))
+                throw new NoSuchElementException();
+            if (onEdge()) {
+                pos++;
+                edgePos++;
+                return cn.edge[edgePos];
+            }
+            pos++;
+            edgePos = 0;
+            Iterator<CharEntry<Node<V>>> i = cn.next.iterator();
+            its.push(i);
+            cn = cn.next.get(c);
+            return c;            
+        }
+
+        @Override
+        public boolean hasMore() {
+            if (edgePos > 0)
+                return false;
+            return its.size() > 0 && its.peek().hasNext();
+        }
+
+        @Override
+        public boolean hasMore(char c) {
+            if (edgePos > 0)
+                return cn.edge[edgePos] == c;
+            // TODO: implement
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public char more() throws NoSuchElementException {
+            if (!hasMore())
+                throw new NoSuchElementException();
+            CharEntry<Node<V>> e = its.peek().next();
+            cn = e.getValue();
+            ces.pop();
+            ces.push(e);
+            return e.getChar();
+        }
+
+        @Override
+        public char more(char c) throws NoSuchElementException {
+            if (!hasMore(c))
+                throw new NoSuchElementException();
+            
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public char back() throws NoSuchElementException {
+            if (pos < 0)
+                throw new NoSuchElementException();
+            if (edgePos > 0) {
+                pos--;
+                edgePos--;
+                return cn.edge[edgePos];
+            }
+            pos--;
+            ces.pop();
+            its.pop();
+            cn = ces.peek().getValue();
+            if (cn.edge != null)
+                edgePos = cn.edge.length - 1;
+            return ces.peek().getChar();
+        }
+
+        @Override
+        public boolean hasValue() {
+            if (cn.edge != null)
+                return cn.edge.length == edgePos + 1 && cn.value != null;
+            return cn.value != null;
+        }
+
+        @Override
+        public V getValue() {
+            if (cn.edge != null)
+                return cn.edge.length == edgePos + 1 ? cn.value : null;
+            return cn.value;
+        }
+
+        @Override
+        public int currentPosition() {
+            return pos;
+        }
+
+        @Override
+        public char currentChar() throws NoSuchElementException {
+            if (pos < 0)
+                throw new NoSuchElementException();
+            if (cn.edge != null)
+                return cn.edge[edgePos];
+            return ces.peek().getChar();
+        }
+
+        @Override
+        public String currentPrefix() {
+            // TODO Auto-generated method stub
+            throw new UnsupportedOperationException();
+        }
+        
     }
     
     
@@ -370,7 +553,7 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
                 // alternative char for its ending
                 while (!cur.hasMore()) {            
                     // if finished, return null
-                    if (cur.currentPosition() == 0)
+                    if (cur.currentPosition() < 0)
                         return null;                
                     cur.back();
                 }
@@ -429,6 +612,38 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
         @Override
         public String toString() {
             return s + "=" + v;
+        }        
+    }
+    
+    
+    
+    public static class ItrStack<T> {
+        
+        final List<Iterator<T>> its = new ArrayList<>();
+        
+        boolean topHasNext() {
+            int s = its.size();
+            return s > 0 && its.get(s - 1).hasNext(); 
+        }
+        
+        T topNext() {
+            int s = its.size();
+            if (s == 0)
+                throw new NoSuchElementException();
+            return its.get(s - 1).next();
+        }
+        
+        void pop() {
+            if (its.isEmpty()) return;
+            its.remove(its.size() - 1);
+        }
+        
+        void push(Iterator<T> i) {
+            its.add(i);
+        }
+        
+        int size() {
+            return its.size();
         }
         
     }

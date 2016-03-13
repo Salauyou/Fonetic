@@ -163,7 +163,7 @@ public interface TrieMap<V> extends Map<String, V> {
         /**
          * Returns ending char of current prefix
          */
-        char currentChar();
+        char currentChar() throws NoSuchElementException;
         
         /**
          * Returns current prefix

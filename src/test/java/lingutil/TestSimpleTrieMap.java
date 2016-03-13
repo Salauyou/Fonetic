@@ -6,11 +6,11 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
@@ -44,14 +44,15 @@ public class TestSimpleTrieMap {
     @Test
     public void testContainsGet() {
         TrieMap<String> t = new SimpleTrieMap<>(); 
-        t.put("", "EMPTY");
-        for (String s : keys) 
+        Collection<String> ks = new ArrayList<>(keys);
+        ks.add("");
+        for (String s : ks) 
             t.put(s, s);
         
         assertTrue(t.containsKey(""));
         assertFalse(t.containsKey("EMPTY"));
-        assertEquals("EMPTY", t.get(""));
-        assertContainsAll(t, keys);
+        assertEquals("", t.get(""));
+        verifyContents(t, ks, null);
                 
         assertFalse(t.containsKey("BCD"));
         assertFalse(t.containsKey("BA"));
@@ -166,34 +167,31 @@ public class TestSimpleTrieMap {
         
         for (String s : splitPrefixed)
             t.put(s, s);
-        assertContainsAll(t, fullPrefixed);
-        assertContainsAll(t, splitPrefixed);
         
+        Collection<String> c = new ArrayList<>(fullPrefixed);
+        c.addAll(splitPrefixed);
+        verifyContents(t, c, null);
     }
+    
     
     
     static void verifyContents(TrieMap<?> m, 
                                Collection<?> expected, 
                                Collection<?> notExpected) {
         assertEquals(new HashSet<>(expected).size(), m.size());
-        assertContainsAll(m, expected);
-        assertContainsNone(m, notExpected);
-    }
-    
-    
-    static void assertContainsAll(Map<?, ?> map, Collection<?> keys) {
-        for (Object k : keys) {
-            assertTrue(map.containsKey(k));
-            assertEquals(k, map.get(k));
+        if (expected != null) {
+            for (Object k : expected) {
+                assertTrue(m.containsKey(k));
+                assertEquals(k, m.get(k));
+            }
+        }
+        if (notExpected != null) {
+            for (Object k : notExpected) {
+                assertFalse(m.containsKey(k));
+                assertNull(m.get(k));
+            }
         }
     }
     
-    
-    static void assertContainsNone(Map<?, ?> map, Collection<?> keys) {
-        for (Object k : keys) {
-            assertFalse(map.containsKey(k));
-            assertNull(map.get(k));
-        }
-    }
-    
+
 }
