@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
@@ -13,7 +14,6 @@ import java.util.stream.Collectors;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 
-import ru.iitdgroup.lingutil.collect.CharTrieSet;
 import ru.iitdgroup.lingutil.text.Word;
 import ru.iitdgroup.lingutil.text.Words;
 
@@ -23,8 +23,8 @@ public class DonaldVsHillary {
     static final String SPAN_DEMOCRATIC = "<span style=\"background: #08f; color: #fff\">%s</span>";
     static final String SPAN_REPUBLICAN = "<span style=\"background: #f00; color: #fff\">%s</span>";
     
-    static final CharTrieSet hillary = new CharTrieSet().add("HILLARY").add("CLINTON");    
-    static final CharTrieSet donald  = new CharTrieSet().add("DONALD").add("TRUMP");
+    static final List<String> hillary = Arrays.asList("HILLARY", "CLINTON");    
+    static final List<String> donald  = Arrays.asList("DONALD",  "TRUMP");
     
     
     /**
@@ -51,10 +51,10 @@ public class DonaldVsHillary {
         words = words
                 .stream()
                 .map(w -> {
-                    if (hillary.contains(w)) {
+                    if (hillary.contains(w.value())) {
                         h.incrementAndGet();
                         return w.as(SPAN_DEMOCRATIC.replace("%s", w.getMappedSubstring()));
-                    } else if (donald.contains(w)) {
+                    } else if (donald.contains(w.value())) {
                         d.incrementAndGet();
                         return w.as(SPAN_REPUBLICAN.replace("%s", w.getMappedSubstring()));
                     } else {
