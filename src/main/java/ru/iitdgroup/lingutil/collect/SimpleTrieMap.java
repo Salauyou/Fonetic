@@ -70,7 +70,10 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
 
     @Override
     public boolean containsKey(Object key) {
-        return get(key) != null;
+        if (!(key instanceof CharSequence))
+            return false;
+        Node<V> n = findNode(root, (CharSequence) key);
+        return n != null && n.value != null;
     }
     
     
@@ -78,15 +81,53 @@ public class SimpleTrieMap<V> extends AbstractMap<String, V>
     public V get(Object key) {
         if (!(key instanceof CharSequence))
             return null;
-        CharSequence s = (CharSequence) key;
-      
-        // TODO: optimize - traverse without node tracking, 
-        // fail fast if at some point (edge length > remainder part)
-        Prefix<V> p = findPrefix(root, s);
-        return (p != null && p.length == s.length() && p.cutting == 0) 
-                  ? p.ending.value 
-                  : null;
+        Node<V> n = findNode(root, (CharSequence) key);
+        return n == null ? null : n.value;
     }
+    
+    
+
+    /**
+     * Returns node which exactly corresponds to the key, 
+     * or null if such node doesn't exist
+     */
+    static <V> Node<V> findNode(Node<V> root, CharSequence key) {
+        int len = key.length(), step = 0, p = 0;
+        Node<V> n = root;
+        CharMap<Node<V>> h = root.next;
+        while (p < len) {
+            if (h == null)
+                return null;
+            if ((n = h.get(key.charAt(p))) == null)
+                return null;
+            if (n.edge == null) 
+                step = 1;
+            else if (n.edge.length > len - p)
+                return null;
+            else if ((step = walkEdge(n, key, p)) < n.edge.length)
+                return null;
+            p += step;
+            h = n.next;
+        }
+        return n;
+    }
+  
+    
+    
+    /**
+     * Returns position in node edge from where `s` cannot 
+     * continue match
+     */
+    static <V> int walkEdge(Node<V> n, CharSequence s, int from) {
+        int len = s.length(), p = 1, pos = from + 1;
+        while (pos < len && p < n.edge.length 
+               && s.charAt(pos) == n.edge[p]) {
+            pos++;
+            p++;
+        }
+        return pos - from;
+    }
+    
     
     
     @Override

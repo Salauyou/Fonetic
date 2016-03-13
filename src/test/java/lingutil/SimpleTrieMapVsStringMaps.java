@@ -81,7 +81,7 @@ public class SimpleTrieMapVsStringMaps {
     }
     
     
-//    @Test
+    @Test
     public void testPutIfAbsent() {
         TimeMeasurer.measureTime(5,                        
             new TestPutIfAbsent("java.util.HashMap", hashmap, existingKeys, absentKeys),
@@ -101,7 +101,8 @@ public class SimpleTrieMapVsStringMaps {
         int c = 0;
         final String name;
         
-        TestGet(String name, Map<? super String, Integer> map, List<String> existingKeys, List<String> absentKeys) {
+        TestGet(String name, Map<? super String, Integer> map, 
+                List<String> existingKeys, List<String> absentKeys) {
             this.workKeys.addAll(existingKeys);
             this.workKeys.addAll(absentKeys);
             m = map;
@@ -141,7 +142,8 @@ public class SimpleTrieMapVsStringMaps {
         int c = 0;
         final String name;
         
-        TestContainsKey(String name, Map<? super String, Integer> map, List<String> existingKeys, List<String> absentKeys) {
+        TestContainsKey(String name, Map<? super String, Integer> map, 
+                        List<String> existingKeys, List<String> absentKeys) {
             this.workKeys.addAll(existingKeys);
             this.workKeys.addAll(absentKeys);
             m = map;
@@ -181,7 +183,8 @@ public class SimpleTrieMapVsStringMaps {
         final List<String> existingKeys;
         final List<String> absentKeys;
         
-        TestPutIfAbsent(String name, Map<? super String, Integer> map, List<String> existingKeys, List<String> absentKeys) {
+        TestPutIfAbsent(String name, Map<? super String, Integer> map, 
+                        List<String> existingKeys, List<String> absentKeys) {
             this.existingKeys = Collections.unmodifiableList(existingKeys);
             this.absentKeys = Collections.unmodifiableList(absentKeys);
             m = map;
